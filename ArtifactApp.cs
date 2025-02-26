@@ -3,19 +3,28 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
+    /*
+    Current TODO List:
+    - Add more basic options to do basic game mechanics such as chop wood and craft.
+    - Add some Automation using the basic options
+    - Get a report of data so you dont need to see the screen like Inventory, Level, Location, gold etc.
+    */
+
 namespace ArtifactMMO
 {
-    public class ArtifactIntro
+    public class ArtifactApp
     {
 
         private static readonly HttpClient client = new HttpClient();
-
 
         public static async Task Main(string[] args)
         {
             int input = -1, x = 0, y = 0;
             string characterName = "SaltyNZ";
             string token = Environment.GetEnvironmentVariable("ArtifactAPIKey") ?? "NoToken";
+
+            ArtifactApiService api = new ArtifactApiService();
+
             while (input != 0)
             {
                 Console.WriteLine("------------------------------------------------------------");
@@ -28,43 +37,38 @@ namespace ArtifactMMO
                 if (int.TryParse(userInput, out input))
                 {
 
-
-                    if (input == 1) //Movement
+                    switch (input)
                     {
-                        Console.WriteLine("Select X");
-                        userInput = Console.ReadLine();
-                        if (int.TryParse(userInput, out int moveInput))
-                        {
-                            x = moveInput;
-                            Console.WriteLine("Select Y");
+                        case 1:
+                            Console.WriteLine("Select X");
                             userInput = Console.ReadLine();
-                            if (int.TryParse(userInput, out moveInput))
+                            if (int.TryParse(userInput, out int moveInput))
                             {
-                                y = moveInput;
-                                await MoveCharacterAsync(characterName, token, x, y);
-                                await Task.Delay(5000); //Standard movement delay
+                                x = moveInput;
+                                Console.WriteLine("Select Y");
+                                userInput = Console.ReadLine();
+                                if (int.TryParse(userInput, out moveInput))
+                                {
+                                    y = moveInput;
+                                    await api.MoveCharacterAsync(characterName, token, x, y);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Invalid input. Please enter a valid number.");
+                                }
                             }
                             else
                             {
                                 Console.WriteLine("Invalid input. Please enter a valid number.");
                             }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Invalid input. Please enter a valid number.");
-                        }
-
-
+                            break;
+                        case 2:
+                            await AttackAsync(characterName, token);
+                            break;
+                        case 3:
+                            await RestAsync(characterName, token);
+                            break;
                     }
-                    else if (input == 2) //Attack
-                    {
-                        await AttackAsync(characterName, token);
-                    }
-                    else if (input == 3) //Rest
-                    {
-                        await RestAsync(characterName, token);
-                    }
-
                 }
                 else
                 {
