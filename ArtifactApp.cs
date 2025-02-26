@@ -63,10 +63,10 @@ namespace ArtifactMMO
                             }
                             break;
                         case 2:
-                            await AttackAsync(characterName, token);
+                            await api.AttackAsync(characterName, token);
                             break;
                         case 3:
-                            await RestAsync(characterName, token);
+                            await api.RestAsync(characterName, token);
                             break;
                     }
                 }
@@ -78,97 +78,5 @@ namespace ArtifactMMO
 
             Console.WriteLine("Exiting App");
         }
-
-
-        public static async Task MoveCharacterAsync(string characterName, string token, int x, int y)
-        {
-            string url = $"https://api.artifactsmmo.com/my/{characterName}/action/move";
-
-            var requestBody = new
-            {
-                x = x,
-                y = y
-            };
-
-            string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            client.DefaultRequestHeaders.Clear();
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-
-            HttpResponseMessage response = await client.PostAsync(url, content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                string result = await response.Content.ReadAsStringAsync();
-                Console.WriteLine(result);
-            }
-            else
-            {
-                Console.WriteLine($"Error: {response.StatusCode}");
-            }
-        }
-
-        public static async Task AttackAsync(string characterName, string token)
-        {
-            string url = $"https://api.artifactsmmo.com/my/{characterName}/action/fight";
-
-            var requestBody = new
-            {
-
-            };
-
-            string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            client.DefaultRequestHeaders.Clear();
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-
-            HttpResponseMessage response = await client.PostAsync(url, content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                string result = await response.Content.ReadAsStringAsync();
-                Console.WriteLine(result);
-            }
-            else
-            {
-                Console.WriteLine($"Error: {response.StatusCode}");
-            }
-
-        }
-
-        public static async Task RestAsync(string characterName, string token)
-        {
-            string url = $"https://api.artifactsmmo.com/my/{characterName}/action/rest";
-
-            var requestBody = new
-            {
-
-            };
-
-            string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            client.DefaultRequestHeaders.Clear();
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-
-            HttpResponseMessage response = await client.PostAsync(url, content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                string result = await response.Content.ReadAsStringAsync();
-                Console.WriteLine(result);
-            }
-            else
-            {
-                Console.WriteLine($"Error: {response.StatusCode}");
-            }
-
-        }
-
     }
 }
