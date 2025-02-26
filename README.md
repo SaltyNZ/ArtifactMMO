@@ -1,4 +1,4 @@
-#This is a project to learn using and manipulating API's.
+This is a project to learn using and manipulating API's.
 It uses the website https://www.artifactsmmo.com/
 
 Requirements:
