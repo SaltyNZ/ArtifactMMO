@@ -47,6 +47,27 @@ namespace ArtifactMMO
             await HandleResponse<RestResponse>(response);
         }
 
+        public async Task GatheringAsync(string characterName, string token)
+        {
+            string url = $"https://api.artifactsmmo.com/my/{characterName}/action/gathering";
+            var requestBody = new { };
+
+            HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
+            await HandleResponse<gatheringResponse>(response);
+        }
+
+        public async Task UnequipAsync(string characterName, string token, string slot)
+        {
+            string url = $"https://api.artifactsmmo.com/my/{characterName}/action/unequip";
+            var requestBody = new { slot };
+
+            HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
+            await HandleResponse<gatheringResponse>(response);
+        }
+
+        // ========================================
+        // API Send and Response Handling Methods 
+        // ========================================
         private async Task<HttpResponseMessage> SendPostRequest(string url, object requestBody, string token)
         {
             string json = JsonSerializer.Serialize(requestBody);
@@ -59,9 +80,6 @@ namespace ArtifactMMO
             return await _client.PostAsync(url, content);
         }
 
-        // ===============================
-        // API Response Handling Methods 
-        // ===============================
         private async Task HandleResponse<TResponse>(HttpResponseMessage response) where TResponse : class
         {
             if (response.IsSuccessStatusCode)
@@ -96,6 +114,8 @@ namespace ArtifactMMO
             else
             {
                 Console.WriteLine($"Error-01: {response.StatusCode}");
+                string result = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Raw Response: {result}");
             }
         }
 

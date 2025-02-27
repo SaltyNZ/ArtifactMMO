@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,15 +27,10 @@ namespace ArtifactMMO
             string token = Environment.GetEnvironmentVariable("ArtifactAPIKey") ?? "NoToken";
 
             ArtifactApiService api = new ArtifactApiService();
-
+            UI ui = new UI();
             while (input != 0)
             {
-                Console.WriteLine("------------------------------------------------------------");
-                Console.WriteLine("Select a Function:");
-                Console.WriteLine("1. Move");
-                Console.WriteLine("2. Attack Current Square");
-                Console.WriteLine("3. Rest");
-                Console.WriteLine("0. Exit");
+                ui.MainUIWriteLine();
                 string? userInput = Console.ReadLine();
                 if (int.TryParse(userInput, out input))
                 {
@@ -65,6 +61,14 @@ namespace ArtifactMMO
                             break;
                         case 3:
                             await api.RestAsync(characterName, token);
+                            break;
+                        case 4:
+                            await api.GatheringAsync(characterName, token);
+                            break;
+                        case 5:
+                            Console.WriteLine("Please type the slot");
+                            userInput = Console.ReadLine();
+                            if(ui.isValidEquipment(userInput ?? "") && userInput != null) await api.UnequipAsync(characterName, token, userInput.ToLower());
                             break;
                     }
                 }
