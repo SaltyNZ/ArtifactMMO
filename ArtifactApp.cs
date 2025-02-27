@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
     /*
     Current TODO List:
+    - Add Loading Bar with the cooldown recived from API
     - Add more basic options to do basic game mechanics such as chop wood and craft.
     - Add some Automation using the basic options
     - Get a report of data so you dont need to see the screen like Inventory, Level, Location, gold etc.
@@ -41,15 +42,11 @@ namespace ArtifactMMO
                     {
                         case 1:
                             Console.WriteLine("Select X");
-                            userInput = Console.ReadLine();
-                            if (int.TryParse(userInput, out int moveInput))
+                            if (int.TryParse(Console.ReadLine(), out x))
                             {
-                                x = moveInput;
                                 Console.WriteLine("Select Y");
-                                userInput = Console.ReadLine();
-                                if (int.TryParse(userInput, out moveInput))
+                                if (int.TryParse(Console.ReadLine(), out y))
                                 {
-                                    y = moveInput;
                                     await api.MoveCharacterAsync(characterName, token, x, y);
                                 }
                                 else
@@ -78,5 +75,6 @@ namespace ArtifactMMO
 
             Console.WriteLine("Exiting App");
         }
+
     }
 }
