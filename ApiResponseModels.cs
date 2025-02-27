@@ -16,7 +16,7 @@ namespace ArtifactMMO
     // =======================
     // Movement API Response
     // =======================
-    public class MoveResponse
+    public class MoveResponse : IHasCooldown
     {
         [JsonPropertyName("cooldown")]
         public CooldownData? Cooldown { get; set; }
@@ -31,22 +31,29 @@ namespace ArtifactMMO
     // =======================
     // Attack API Response
     // =======================
-    public class AttackResponse
+    public class AttackResponse : IHasCooldown
     {
-
+        [JsonPropertyName("cooldown")]
+        public CooldownData? Cooldown { get; set; }
     }
 
     // =======================
     // Rest API Response
     // =======================
-    public class RestResponse
+    public class RestResponse : IHasCooldown
     {
-        
+        [JsonPropertyName("cooldown")]
+        public CooldownData? Cooldown { get; set; }
     }
 
     // ==========================
     // Multi-Use API Response's
     // ==========================
+    public interface IHasCooldown
+    {
+        CooldownData? Cooldown { get; set; }
+    }
+
     public class CooldownData
     {
         [JsonPropertyName("total_seconds")]

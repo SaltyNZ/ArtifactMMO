@@ -55,7 +55,7 @@ namespace ArtifactMMO
             return await _client.PostAsync(url, content);
         }
 
-        private async Task HandleResponse<TResponse>(HttpResponseMessage response)
+        private async Task HandleResponse<TResponse>(HttpResponseMessage response) where TResponse : class
         {
             if (response.IsSuccessStatusCode)
             {
@@ -63,6 +63,16 @@ namespace ArtifactMMO
                 var apiResponse = JsonSerializer.Deserialize<ApiResponse<TResponse>>(result);
                 Console.WriteLine(result);
                 //Console.WriteLine("It did actually work"); //Testing Line
+
+                if(apiResponse?.Data is IHasCooldown cooldownData && cooldownData.Cooldown != null)
+                {
+                    int waitTime = cooldownData.Cooldown is not null
+                    ? (int)(cooldownData.Cooldown.Expiration - cooldownData.Cooldown.StartedAt).TotalSeconds : 0;
+                    Console.WriteLine($"Waittime = {waitTime}");
+
+                    if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+                }
+
             }
             else
             {
@@ -70,14 +80,22 @@ namespace ArtifactMMO
             }
         }
 
-        private static async Task ShowProgressBar(string taskName, Func<Task> action, int waitTime)
+        private static async Task ShowProgressBar(string taskName, int waitTime)
         {
             await AnsiConsole.Progress()
                 .StartAsync(async ctx =>
                 {
-                    var task = ctx.AddTask(taskName).IsIndeterminate();
-                    await action();
-                    task.StopTask();
+                    var task = ctx.AddTask(taskName);
+                    task.MaxValue(100);
+                    
+                    int interval = 100;
+                    int steps = (waitTime * 1000) / interval;
+
+                    for (int i = 0; i <= steps; i++)
+                    {
+                        task.Value = (i / (float)steps * 100);
+                        await Task.Delay(interval);
+                    }
                 });
         }
     }
