@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Spectre.Console;
+using Spectre.Console.Json;
 
 namespace ArtifactMMO
 {
@@ -16,6 +17,9 @@ namespace ArtifactMMO
             _client = new HttpClient();
         }
 
+        // ====================
+        // Action API Methods 
+        // ====================
         public async Task MoveCharacterAsync(string characterName, string token, int x, int y)
         {
             string url = $"https://api.artifactsmmo.com/my/{characterName}/action/move";
@@ -55,13 +59,28 @@ namespace ArtifactMMO
             return await _client.PostAsync(url, content);
         }
 
+        // ===============================
+        // API Response Handling Methods 
+        // ===============================
         private async Task HandleResponse<TResponse>(HttpResponseMessage response) where TResponse : class
         {
             if (response.IsSuccessStatusCode)
             {
                 string result = await response.Content.ReadAsStringAsync();
                 var apiResponse = JsonSerializer.Deserialize<ApiResponse<TResponse>>(result);
-                Console.WriteLine(result);
+
+                string formattedResult = JsonSerializer.Serialize(JsonDocument.Parse(result), new JsonSerializerOptions
+                {
+                    WriteIndented = true // Adds line breaks & indentation
+                });
+
+                AnsiConsole.Write(
+                    new Panel(Markup.Escape(formattedResult))
+                        .Header("Response JSON")
+                        .Expand()
+                        .RoundedBorder()
+                        .BorderColor(Spectre.Console.Color.Blue)
+                );
                 //Console.WriteLine("It did actually work"); //Testing Line
 
                 if(apiResponse?.Data is IHasCooldown cooldownData && cooldownData.Cooldown != null)
@@ -80,6 +99,9 @@ namespace ArtifactMMO
             }
         }
 
+        // ===============================
+        // Progress Bar Methods
+        // ===============================
         private static async Task ShowProgressBar(string taskName, int waitTime)
         {
             await AnsiConsole.Progress()

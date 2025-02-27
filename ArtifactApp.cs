@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 
     /*
     Current TODO List:
-    - Add Loading Bar with the cooldown recived from API
+    - Add Loading Bar with the cooldown recived from API - Done - 27/2/25
     - Add more basic options to do basic game mechanics such as chop wood and craft.
     - Add some Automation using the basic options
     - Get a report of data so you dont need to see the screen like Inventory, Level, Location, gold etc.
+    - Optimize and Improve the Console UI using Spectre.Console
     */
 
 namespace ArtifactMMO
