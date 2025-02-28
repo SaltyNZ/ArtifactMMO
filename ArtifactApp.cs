@@ -17,17 +17,20 @@ namespace ArtifactMMO
 {
     public class ArtifactApp
     {
-
         private static readonly HttpClient client = new HttpClient();
 
         public static async Task Main(string[] args)
         {
+            //Setting Variables
             int input = -1, x = 0, y = 0, qty = 1;
             string characterName = "SaltyNZ", slot = "NoSlot", code = "NoCode";
             string token = Environment.GetEnvironmentVariable("ArtifactAPIKey") ?? "NoToken";
-
+            
+            //Classes
             ArtifactApiService api = new ArtifactApiService();
             UI ui = new UI();
+            
+            //Main Process
             while (input != 0)
             {
                 ui.MainUIWriteLine();
