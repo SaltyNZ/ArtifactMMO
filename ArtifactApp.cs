@@ -22,7 +22,7 @@ namespace ArtifactMMO
 
         public static async Task Main(string[] args)
         {
-            int input = -1, x = 0, y = 0;
+            int input = -1, x = 0, y = 0, qty = 1;
             string characterName = "SaltyNZ";
             string token = Environment.GetEnvironmentVariable("ArtifactAPIKey") ?? "NoToken";
 
@@ -69,6 +69,19 @@ namespace ArtifactMMO
                             Console.WriteLine("Please type the slot");
                             userInput = Console.ReadLine();
                             if(ui.isValidEquipment(userInput ?? "") && userInput != null) await api.UnequipAsync(characterName, token, userInput.ToLower());
+                            break;
+                        case 6:
+                            Console.WriteLine("Please type what you want to craft");
+                            userInput = Console.ReadLine();
+                            Console.WriteLine("Please select No of items");
+                            if(int.TryParse(Console.ReadLine(), out qty))
+                            {
+                                if(ui.isValidCraft(userInput ?? "") && userInput != null) await api.CraftAsync(characterName,token,userInput.ToLower(),qty);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Invalid QTY");
+                            }                            
                             break;
                     }
                 }

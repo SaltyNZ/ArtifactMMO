@@ -31,11 +31,16 @@ namespace ArtifactMMO
         {
             foreach(string i in validEquipment)
             {
-                if(equipment.ToLower() == i) return true;
-                else Console.WriteLine(i);   
+                if(equipment.ToLower() == i) return true;  
             }
-            Console.WriteLine("Didn't hit");
             return false;
         }
+
+        public bool isValidCraft(string craft)
+        {
+            return true;
+        }
+
+
     }
 }

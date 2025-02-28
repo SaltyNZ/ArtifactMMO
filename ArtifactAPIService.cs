@@ -65,6 +65,15 @@ namespace ArtifactMMO
             await HandleResponse<gatheringResponse>(response);
         }
 
+         public async Task CraftAsync(string characterName, string token, string code, int quantity)
+         {
+            string url = $"https://api.artifactsmmo.com/my/{characterName}/action/crafting";
+            var requestBody = new { code, quantity };
+
+            HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
+            await HandleResponse<craftResponse>(response);
+         }
+
         // ========================================
         // API Send and Response Handling Methods 
         // ========================================

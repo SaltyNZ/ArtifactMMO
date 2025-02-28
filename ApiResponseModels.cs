@@ -56,6 +56,15 @@ namespace ArtifactMMO
     }
 
     // =======================
+    // Crafting API Response
+    // =======================
+    public class craftResponse : IHasCooldown
+    {
+        [JsonPropertyName("cooldown")]
+        public CooldownData? Cooldown { get; set; }
+    }
+
+    // =======================
     // Unequip API Response
     // =======================
     public class unequipResponse : IHasCooldown
