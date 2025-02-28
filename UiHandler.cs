@@ -23,7 +23,8 @@ namespace ArtifactMMO
             Console.WriteLine("3. Rest");
             Console.WriteLine("4. Gathering");
             Console.WriteLine("5. Unequip");
-            Console.WriteLine("6. Crafting");
+            Console.WriteLine("6. Equip");
+            Console.WriteLine("7. Crafting");
             Console.WriteLine("0. Exit");
         }
 

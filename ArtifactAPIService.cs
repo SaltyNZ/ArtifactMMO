@@ -62,7 +62,16 @@ namespace ArtifactMMO
             var requestBody = new { slot };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandleResponse<gatheringResponse>(response);
+            await HandleResponse<unequipResponse>(response);
+        }
+
+        public async Task EquipAsync(string characterName, string token, string code, string slot)
+        {
+            string url = $"https://api.artifactsmmo.com/my/{characterName}/action/equip";
+            var requestBody = new { code, slot };
+
+            HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
+            await HandleResponse<equipResponse>(response);
         }
 
          public async Task CraftAsync(string characterName, string token, string code, int quantity)
