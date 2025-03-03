@@ -18,13 +18,14 @@ namespace ArtifactMMO
         {
             Console.WriteLine("------------------------------------------------------------");
             Console.WriteLine("Select a Function:");
-            Console.WriteLine("1. Move");
-            Console.WriteLine("2. Attack Current Square");
-            Console.WriteLine("3. Rest");
-            Console.WriteLine("4. Gathering");
-            Console.WriteLine("5. Unequip");
-            Console.WriteLine("6. Equip");
-            Console.WriteLine("7. Crafting");
+            Console.WriteLine("1. Character Info");
+            Console.WriteLine("2. Move");
+            Console.WriteLine("3. Attack Current Square");
+            Console.WriteLine("4. Rest");
+            Console.WriteLine("5. Gathering");
+            Console.WriteLine("6. Unequip");
+            Console.WriteLine("7. Equip");
+            Console.WriteLine("8. Crafting");
             Console.WriteLine("0. Exit");
         }
 

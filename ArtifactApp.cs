@@ -41,6 +41,9 @@ namespace ArtifactMMO
                     switch (input)
                     {
                         case 1:
+                            await api.CharacterInfoAsync(characterName, token);
+                            break;
+                        case 2:
                             Console.WriteLine("Select X");
                             if (int.TryParse(Console.ReadLine(), out x))
                             {
@@ -59,21 +62,21 @@ namespace ArtifactMMO
                                 Console.WriteLine("Invalid input. Please enter a valid number.");
                             }
                             break;
-                        case 2:
+                        case 3:
                             await api.AttackAsync(characterName, token);
                             break;
-                        case 3:
+                        case 4:
                             await api.RestAsync(characterName, token);
                             break;
-                        case 4:
+                        case 5:
                             await api.GatheringAsync(characterName, token);
                             break;
-                        case 5:
+                        case 6:
                             Console.WriteLine("Please type the slot");
                             slot = Console.ReadLine() ?? "";
                             if(ui.isValidEquipment(slot) && slot != null) await api.UnequipAsync(characterName, token, slot.ToLower());
                             break;
-                        case 6:
+                        case 7:
                             Console.WriteLine("Please type the slot");
                             slot = Console.ReadLine() ?? "";
                             if(ui.isValidEquipment(slot) && slot != null)
@@ -83,7 +86,7 @@ namespace ArtifactMMO
                                 if(ui.isValidCraft(code) && code != null) await api.EquipAsync(characterName,token,code.ToLower(),slot.ToLower());
                             }
                             break;
-                        case 7:
+                        case 8:
                             Console.WriteLine("Please type what you want to craft");
                             code = Console.ReadLine() ?? "";
                             Console.WriteLine("Please select No of items");

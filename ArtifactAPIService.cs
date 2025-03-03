@@ -84,6 +84,18 @@ namespace ArtifactMMO
          }
 
         // ========================================
+        // Character API
+        // ========================================
+        public async Task CharacterInfoAsync(string characterName, string token)
+        {
+            string url = $"https://api.artifactsmmo.com/characters/{characterName}";
+            var requestBody = new {};
+
+            HttpResponseMessage response = await _client.GetAsync(url);
+            await HandleResponse<characterInfoResponse>(response);
+        }
+        
+        // ========================================
         // API Send and Response Handling Methods 
         // ========================================
         private async Task<HttpResponseMessage> SendPostRequest(string url, object requestBody, string token)
