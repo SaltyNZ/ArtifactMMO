@@ -308,6 +308,8 @@ namespace ArtifactMMO
     {
         [JsonPropertyName("cooldown")]
         public CooldownData? Cooldown { get; set; }
+        [JsonPropertyName("character")]
+        public characterInfoResponse? Character { get; set; }
     }
 
     // =======================

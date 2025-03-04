@@ -93,6 +93,7 @@ namespace ArtifactMMO
 
                 if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
             }
+
         }
 
         public async Task UnequipAsync(string characterName, string token, string slot)
@@ -193,7 +194,7 @@ namespace ArtifactMMO
         // ========================================
         // API Send and Response Handling Methods 
         // ========================================
-        private async Task<HttpResponseMessage> SendPostRequest(string url, object requestBody, string token)
+        public async Task<HttpResponseMessage> SendPostRequest(string url, object requestBody, string token)
         {
             string json = JsonSerializer.Serialize(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -280,7 +281,7 @@ namespace ArtifactMMO
         // ===============================
         // Progress Bar Methods
         // ===============================
-        private static async Task ShowProgressBar(string taskName, int waitTime)
+        public static async Task ShowProgressBar(string taskName, int waitTime)
         {
             await AnsiConsole.Progress()
                 .StartAsync(async ctx =>
