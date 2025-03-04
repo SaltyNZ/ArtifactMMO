@@ -29,7 +29,8 @@ namespace ArtifactMMO
             //Classes
             ArtifactApiService api = new ArtifactApiService();
             UI ui = new UI();
-            
+            AutomationScripts auto = new AutomationScripts();
+
             //Main Process
             while (input != 0)
             {
@@ -98,6 +99,9 @@ namespace ArtifactMMO
                             {
                                 Console.WriteLine("Invalid QTY");
                             }                            
+                            break;
+                        case 9:
+                            await auto.AutoGathering(characterName, token);
                             break;
                     }
                 }

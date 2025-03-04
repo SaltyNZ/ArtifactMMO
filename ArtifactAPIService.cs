@@ -29,7 +29,16 @@ namespace ArtifactMMO
             var requestBody = new { x, y };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandlePostResponse<MoveResponse>(response);
+            MoveResponse? apiResponse = await HandlePostResponse<MoveResponse>(response);
+
+            if(apiResponse != null && apiResponse is MoveResponse)
+            {
+                int waitTime = apiResponse.Cooldown is not null
+                ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                Console.WriteLine($"Waittime = {waitTime}");
+
+                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+            }
         }
 
         public async Task AttackAsync(string characterName, string token)
@@ -38,7 +47,16 @@ namespace ArtifactMMO
             var requestBody = new { };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandlePostResponse<AttackResponse>(response);
+            AttackResponse? apiResponse = await HandlePostResponse<AttackResponse>(response);
+
+            if(apiResponse != null && apiResponse is AttackResponse)
+            {
+                int waitTime = apiResponse.Cooldown is not null
+                ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                Console.WriteLine($"Waittime = {waitTime}");
+
+                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+            }
         }
 
         public async Task RestAsync(string characterName, string token)
@@ -47,7 +65,16 @@ namespace ArtifactMMO
             var requestBody = new { };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandlePostResponse<RestResponse>(response);
+            RestResponse? apiResponse = await HandlePostResponse<RestResponse>(response);
+
+            if(apiResponse != null && apiResponse is RestResponse)
+            {
+                int waitTime = apiResponse.Cooldown is not null
+                ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                Console.WriteLine($"Waittime = {waitTime}");
+
+                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+            }
         }
 
         public async Task GatheringAsync(string characterName, string token)
@@ -56,7 +83,16 @@ namespace ArtifactMMO
             var requestBody = new { };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandlePostResponse<gatheringResponse>(response);
+            gatheringResponse? apiResponse = await HandlePostResponse<gatheringResponse>(response);
+
+            if(apiResponse != null && apiResponse is gatheringResponse)
+            {
+                int waitTime = apiResponse.Cooldown is not null
+                ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                Console.WriteLine($"Waittime = {waitTime}");
+
+                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+            }
         }
 
         public async Task UnequipAsync(string characterName, string token, string slot)
@@ -65,7 +101,16 @@ namespace ArtifactMMO
             var requestBody = new { slot };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandlePostResponse<unequipResponse>(response);
+            unequipResponse? apiResponse = await HandlePostResponse<unequipResponse>(response);
+
+            if(apiResponse != null && apiResponse is unequipResponse)
+            {
+                int waitTime = apiResponse.Cooldown is not null
+                ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                Console.WriteLine($"Waittime = {waitTime}");
+
+                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+            }
         }
 
         public async Task EquipAsync(string characterName, string token, string code, string slot)
@@ -74,17 +119,53 @@ namespace ArtifactMMO
             var requestBody = new { code, slot };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandlePostResponse<equipResponse>(response);
+            equipResponse? apiResponse = await HandlePostResponse<equipResponse>(response);
+
+            if(apiResponse != null && apiResponse is equipResponse)
+            {
+                int waitTime = apiResponse.Cooldown is not null
+                ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                Console.WriteLine($"Waittime = {waitTime}");
+
+                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+            }
         }
 
-         public async Task CraftAsync(string characterName, string token, string code, int quantity)
-         {
+        public async Task CraftAsync(string characterName, string token, string code, int quantity)
+        {
             string url = $"https://api.artifactsmmo.com/my/{characterName}/action/crafting";
             var requestBody = new { code, quantity };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandlePostResponse<craftResponse>(response);
-         }
+            craftResponse? apiResponse = await HandlePostResponse<craftResponse>(response);
+
+            if(apiResponse != null && apiResponse is craftResponse)
+            {
+                int waitTime = apiResponse.Cooldown is not null
+                ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                Console.WriteLine($"Waittime = {waitTime}");
+
+                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+            }
+        }
+
+        public async Task BankItemsAsync(string characterName, string token, string? code, int quantity)
+        {
+            string url = $"https://api.artifactsmmo.com/my/{characterName}/action/bank/deposit";
+            var requestBody = new { code, quantity };
+
+            HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
+            bankItemResponse? apiResponse = await HandlePostResponse<bankItemResponse>(response);
+
+            if(apiResponse != null && apiResponse is bankItemResponse)
+            {
+                int waitTime = apiResponse.Cooldown is not null
+                ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                Console.WriteLine($"Waittime = {waitTime}");
+
+                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+            }
+        }
 
         // ========================================
         // Character API
@@ -124,7 +205,7 @@ namespace ArtifactMMO
             return await _client.PostAsync(url, content);
         }
 
-        private async Task HandlePostResponse<TResponse>(HttpResponseMessage response) where TResponse : class
+        public async Task<TResponse?> HandlePostResponse<TResponse>(HttpResponseMessage response) where TResponse : class
         {
             if (response.IsSuccessStatusCode)
             {
@@ -147,16 +228,8 @@ namespace ArtifactMMO
                     );
                 }
                 
-                //Console.WriteLine("It did actually work"); //Testing Line
-
-                if(apiResponse?.Data is IHasCooldown cooldownData && cooldownData.Cooldown != null)
-                {
-                    int waitTime = cooldownData.Cooldown is not null
-                    ? (int)(cooldownData.Cooldown.Expiration - cooldownData.Cooldown.StartedAt).TotalSeconds : 0;
-                    Console.WriteLine($"Waittime = {waitTime}");
-
-                    if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
-                }
+                return apiResponse?.Data;
+                
 
             }
             else
@@ -164,10 +237,12 @@ namespace ArtifactMMO
                 Console.WriteLine($"Error-01: {response.StatusCode}");
                 string result = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"Raw Response: {result}");
+
+                return null;
             }
         }
 
-        private async Task<TResponse?> HandleGetResponse<TResponse>(HttpResponseMessage response) where TResponse : class
+        public async Task<TResponse?> HandleGetResponse<TResponse>(HttpResponseMessage response) where TResponse : class
         {
             if (response.IsSuccessStatusCode)
             {

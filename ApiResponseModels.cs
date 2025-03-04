@@ -336,6 +336,15 @@ namespace ArtifactMMO
         [JsonPropertyName("cooldown")]
         public CooldownData? Cooldown { get; set; }
     }
+    
+    // ==========================
+    // Multi-Use API Response's
+    // ==========================
+    public class bankItemResponse : IHasCooldown
+    {
+        [JsonPropertyName("cooldown")]
+        public CooldownData? Cooldown { get; set; }
+    }
 
     // ==========================
     // Multi-Use API Response's
