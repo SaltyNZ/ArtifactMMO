@@ -13,6 +13,7 @@ namespace ArtifactMMO
     {
         private readonly HttpClient _client;
         UI ui = new UI();
+        bool debug = true;
 
         public ArtifactApiService()
         {
@@ -94,7 +95,18 @@ namespace ArtifactMMO
             var requestBody = new {};
 
             HttpResponseMessage response = await _client.GetAsync(url);
-            await HandleGetResponse<characterInfoResponse>(response);
+            var characterInfoResponse = await HandleGetResponse<characterInfoResponse>(response);
+
+            if(characterInfoResponse != null && characterInfoResponse is characterInfoResponse)
+            {
+                ui.CharacterInfoUI(characterInfoResponse);
+                ui.InventoryInfoUI(characterInfoResponse);
+            }
+            else
+            {
+                Console.WriteLine("(ArtifactAPIService-L181) Failed to convert API Response to Character Data.");
+            }
+
         }
         
         // ========================================
@@ -124,13 +136,17 @@ namespace ArtifactMMO
                     WriteIndented = true // Adds line breaks & indentation
                 });
 
-                AnsiConsole.Write(
+                if(debug == true)
+                {
+                    AnsiConsole.Write(
                     new Panel(Markup.Escape(formattedResult))
                         .Header("Response JSON")
                         .Expand()
                         .RoundedBorder()
                         .BorderColor(Spectre.Console.Color.Blue)
-                );
+                    );
+                }
+                
                 //Console.WriteLine("It did actually work"); //Testing Line
 
                 if(apiResponse?.Data is IHasCooldown cooldownData && cooldownData.Cooldown != null)
@@ -151,7 +167,7 @@ namespace ArtifactMMO
             }
         }
 
-        private async Task HandleGetResponse<TResponse>(HttpResponseMessage response) where TResponse : class
+        private async Task<TResponse?> HandleGetResponse<TResponse>(HttpResponseMessage response) where TResponse : class
         {
             if (response.IsSuccessStatusCode)
             {
@@ -163,31 +179,26 @@ namespace ArtifactMMO
                     WriteIndented = true // Adds line breaks & indentation
                 });
 
-                AnsiConsole.Write(
+                if(debug == true)
+                {
+                    AnsiConsole.Write(
                     new Panel(Markup.Escape(formattedResult))
                         .Header("Response JSON")
                         .Expand()
                         .RoundedBorder()
                         .BorderColor(Spectre.Console.Color.Blue)
-                );
-
-                if(apiResponse?.Data is characterInfoResponse characterInfoResponse)
-                {
-                    ui.CharacterInfoUI(characterInfoResponse);
-                    ui.InventoryInfoUI(characterInfoResponse);
-                }
-                else
-                {
-                    Console.WriteLine("(ArtifactAPIService-L181) Failed to convert API Response to Character Data.");
+                    );
                 }
                 
-
+                return apiResponse?.Data;
+               
             }
             else
             {
                 Console.WriteLine($"Error-01: {response.StatusCode}");
                 string result = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"Raw Response: {result}");
+                return null;
             }
         }
 
