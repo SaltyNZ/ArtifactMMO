@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace ArtifactMMO
     public class ArtifactApiService
     {
         private readonly HttpClient _client;
+        UI ui = new UI();
 
         public ArtifactApiService()
         {
@@ -26,7 +28,7 @@ namespace ArtifactMMO
             var requestBody = new { x, y };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandleResponse<MoveResponse>(response);
+            await HandlePostResponse<MoveResponse>(response);
         }
 
         public async Task AttackAsync(string characterName, string token)
@@ -35,7 +37,7 @@ namespace ArtifactMMO
             var requestBody = new { };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandleResponse<AttackResponse>(response);
+            await HandlePostResponse<AttackResponse>(response);
         }
 
         public async Task RestAsync(string characterName, string token)
@@ -44,7 +46,7 @@ namespace ArtifactMMO
             var requestBody = new { };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandleResponse<RestResponse>(response);
+            await HandlePostResponse<RestResponse>(response);
         }
 
         public async Task GatheringAsync(string characterName, string token)
@@ -53,7 +55,7 @@ namespace ArtifactMMO
             var requestBody = new { };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandleResponse<gatheringResponse>(response);
+            await HandlePostResponse<gatheringResponse>(response);
         }
 
         public async Task UnequipAsync(string characterName, string token, string slot)
@@ -62,7 +64,7 @@ namespace ArtifactMMO
             var requestBody = new { slot };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandleResponse<unequipResponse>(response);
+            await HandlePostResponse<unequipResponse>(response);
         }
 
         public async Task EquipAsync(string characterName, string token, string code, string slot)
@@ -71,7 +73,7 @@ namespace ArtifactMMO
             var requestBody = new { code, slot };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandleResponse<equipResponse>(response);
+            await HandlePostResponse<equipResponse>(response);
         }
 
          public async Task CraftAsync(string characterName, string token, string code, int quantity)
@@ -80,7 +82,7 @@ namespace ArtifactMMO
             var requestBody = new { code, quantity };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
-            await HandleResponse<craftResponse>(response);
+            await HandlePostResponse<craftResponse>(response);
          }
 
         // ========================================
@@ -92,7 +94,7 @@ namespace ArtifactMMO
             var requestBody = new {};
 
             HttpResponseMessage response = await _client.GetAsync(url);
-            await HandleResponse<characterInfoResponse>(response);
+            await HandleGetResponse<characterInfoResponse>(response);
         }
         
         // ========================================
@@ -110,7 +112,7 @@ namespace ArtifactMMO
             return await _client.PostAsync(url, content);
         }
 
-        private async Task HandleResponse<TResponse>(HttpResponseMessage response) where TResponse : class
+        private async Task HandlePostResponse<TResponse>(HttpResponseMessage response) where TResponse : class
         {
             if (response.IsSuccessStatusCode)
             {
@@ -139,6 +141,46 @@ namespace ArtifactMMO
 
                     if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
                 }
+
+            }
+            else
+            {
+                Console.WriteLine($"Error-01: {response.StatusCode}");
+                string result = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Raw Response: {result}");
+            }
+        }
+
+        private async Task HandleGetResponse<TResponse>(HttpResponseMessage response) where TResponse : class
+        {
+            if (response.IsSuccessStatusCode)
+            {
+                string result = await response.Content.ReadAsStringAsync();
+                var apiResponse = JsonSerializer.Deserialize<ApiResponse<TResponse>>(result);
+
+                string formattedResult = JsonSerializer.Serialize(JsonDocument.Parse(result), new JsonSerializerOptions
+                {
+                    WriteIndented = true // Adds line breaks & indentation
+                });
+
+                AnsiConsole.Write(
+                    new Panel(Markup.Escape(formattedResult))
+                        .Header("Response JSON")
+                        .Expand()
+                        .RoundedBorder()
+                        .BorderColor(Spectre.Console.Color.Blue)
+                );
+
+                if(apiResponse?.Data is characterInfoResponse characterInfoResponse)
+                {
+                    ui.CharacterInfoUI(characterInfoResponse);
+                    ui.InventoryInfoUI(characterInfoResponse);
+                }
+                else
+                {
+                    Console.WriteLine("(ArtifactAPIService-L181) Failed to convert API Response to Character Data.");
+                }
+                
 
             }
             else

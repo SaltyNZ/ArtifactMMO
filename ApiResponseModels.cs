@@ -395,11 +395,11 @@ namespace ArtifactMMO
 
     public class InventoryData
     {
-        [JsonPropertyName("id")]
-        public int Id { get; set; }
+        [JsonPropertyName("slot")]
+        public int Slot { get; set; }
 
-        [JsonPropertyName("name")]
-        public string? Name { get; set; }
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
 
         [JsonPropertyName("quantity")]
         public int Quantity { get; set; }
