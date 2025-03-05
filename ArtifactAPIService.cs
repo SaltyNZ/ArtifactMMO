@@ -13,7 +13,7 @@ namespace ArtifactMMO
     {
         private readonly HttpClient _client;
         UI ui = new UI();
-        bool debug = true;
+        bool debug = false;
 
         public ArtifactApiService()
         {

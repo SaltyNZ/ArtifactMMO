@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
+using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -20,10 +21,27 @@ namespace ArtifactMMO
             _client = new HttpClient();
         }
 
-        public async Task AutoGathering(string characterName, string token)
+        public async Task AutoIngotGathering(string characterName, string token)
         {
+            /*
+                Steps:
+                1. Start up:
+                    - What Ingot (Manual atm)
+                    - Get Char info
+                    - Clear Inventory into bank if needed
+                    - return to mine
+                2. The Loop
+                    A. Gather until the inventory is at capacity
+                    B. Move to crafting station and craft until you cant.
+                    C. Bank the Ingots
+                    D. Move to gathering and repeat
+
+            */
             
-            int totalItems = 0;
+            int totalItems = 0, II = 0;
+            string ingot = "copper", ore = $"{ingot}_ore";
+            bool breaked = false;
+
 
             Console.WriteLine("STARTING GATHERING TASK");
             string url = $"https://api.artifactsmmo.com/characters/{characterName}";
@@ -43,10 +61,14 @@ namespace ArtifactMMO
                     await api.MoveCharacterAsync(characterName, token, 4, 1);
                     foreach(var item in charinfo.Inventory)
                     {
-                        if(item.Quantity > 0)
+                        if(item.Quantity > 0 && item.Code != ore)
+                        {
+                            await api.BankItemsAsync(characterName, token, item.Code, item.Quantity);
+                        } 
+                        else if (item.Quantity > 0 && item.Code == ore)
                         {
                             totalItems += item.Quantity;
-                            await api.BankItemsAsync(characterName, token, item.Code, item.Quantity);
+                            Console.WriteLine($"There is {item.Quantity} in the inv so the total is now {totalItems} for total items");
                         }
                     }
                     await api.MoveCharacterAsync(characterName,token,gatherX,gatherY);
@@ -55,34 +77,118 @@ namespace ArtifactMMO
                 url = $"https://api.artifactsmmo.com/my/{characterName}/action/gathering";
                 requestBody = new { };
 
-                //loop
-                while(true)
+                response = await api.SendPostRequest(url, requestBody, token);
+                if(response.IsSuccessStatusCode)
                 {
-                    response = await api.SendPostRequest(url, requestBody, token);
                     gatheringResponse? apiGatherResponse = await api.HandlePostResponse<gatheringResponse>(response);
 
                     if(apiGatherResponse != null && apiGatherResponse is gatheringResponse)
-                    {
-                        int waitTime = apiGatherResponse.Cooldown is not null
-                        ? (int)(apiGatherResponse.Cooldown.Expiration - apiGatherResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                        Console.WriteLine($"Waittime = {waitTime}");
-
-                        if (waitTime > 0) await ArtifactApiService.ShowProgressBar("Cooldown in progress...", waitTime);
-                    } 
-                    
-                    if(Console.KeyAvailable)
-                    {
-                        var key = Console.ReadKey(intercept: true).Key;
-
-                        if(key == ConsoleKey.Escape)
                         {
-                            Console.WriteLine("Ending Loop as ESC was pressed");
-                            break;
+                            int waitTime = apiGatherResponse.Cooldown is not null
+                            ? (int)(apiGatherResponse.Cooldown.Expiration - apiGatherResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                            Console.WriteLine($"Waittime = {waitTime}");
+
+                            if (waitTime > 0) await ArtifactApiService.ShowProgressBar("Cooldown in progress...", waitTime);
                         }
-                    }
 
+                    //loop
+                    while(II < 1)
+                    {                       
+                        while(/*totalItems < charinfo.InventoryMaxItems*/ totalItems < 10) // or statement for testing
+                        {
+                            Console.WriteLine("Loop Start");
+                            if(Console.KeyAvailable)
+                            {
+                                var key = Console.ReadKey(intercept: true).Key;
+
+                                if(key == ConsoleKey.Escape)
+                                {
+                                    Console.WriteLine("Ending Loop as ESC was pressed");
+                                    breaked = true;
+                                    break;
+                                }
+                            }
+
+                            response = await api.SendPostRequest(url, requestBody, token);
+                            apiGatherResponse = await api.HandlePostResponse<gatheringResponse>(response);
+
+                            if(apiGatherResponse != null && apiGatherResponse is gatheringResponse)
+                            {
+                                int waitTime = apiGatherResponse.Cooldown is not null
+                                ? (int)(apiGatherResponse.Cooldown.Expiration - apiGatherResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                                Console.WriteLine($"Waittime = {waitTime}");
+                            
+
+                                if (waitTime > 0)
+                                {
+                                    await ArtifactApiService.ShowProgressBar("Cooldown in progress...", waitTime);
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"weird waittime");
+                                    break;
+                                }
+                                foreach(var gathereditem in apiGatherResponse.Detail.Items)
+                                {
+                                    if(gathereditem.Code == ore)
+                                    {
+                                        totalItems += gathereditem.Quantity;
+                                        Console.WriteLine($"Gathered {gathereditem.Quantity} so the total is {totalItems}");
+                                    }
+                                }
+                            }
+                        }
+
+                        if(breaked == true) break;
+
+
+                        // -----------------
+                        //     CRAFTING
+                        // -----------------
+                        //Move to Crafting Station
+                        await api.MoveCharacterAsync(characterName, token, 1, 5);
+
+                        //Crafting Variables
+                        int craftQTY = totalItems / 10;
                     
+                        //API
+                        /*
+                        url = $"https://api.artifactsmmo.com/my/{characterName}/action/crafting";
+                        var requestCraftBody = new { ingot, craftQTY };
 
+                        response = await api.SendPostRequest(url, requestCraftBody, token);
+                        craftResponse? apiCraftResponse = await api.HandlePostResponse<craftResponse>(response);
+
+                        if(apiCraftResponse != null && apiCraftResponse is craftResponse)
+                        {
+                            int waitTime = apiCraftResponse.Cooldown is not null
+                            ? (int)(apiCraftResponse.Cooldown.Expiration - apiCraftResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                            Console.WriteLine($"Waittime = {waitTime}");
+
+                            if (waitTime > 0) await ArtifactApiService.ShowProgressBar("Cooldown in progress...", waitTime);
+                        }
+                        */
+                        Console.WriteLine($"CraftQTY: {craftQTY}");
+                        Console.WriteLine($"code: {ingot}");
+                        Console.WriteLine("END");
+                        break;
+                        if(Console.KeyAvailable)
+                        {
+                            var key = Console.ReadKey(intercept: true).Key;
+
+                            if(key == ConsoleKey.Escape)
+                            {
+                                Console.WriteLine("Ending Loop as ESC was pressed");
+                                break;
+                            }
+                        }
+                        Console.WriteLine("Loop End");
+                        II++;                    
+                    }
+                } 
+                else
+                {
+                    Console.WriteLine("Errored");
                 }
             }
         }

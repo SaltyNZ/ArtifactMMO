@@ -101,7 +101,7 @@ namespace ArtifactMMO
                             }                            
                             break;
                         case 9:
-                            await auto.AutoGathering(characterName, token);
+                            await auto.AutoIngotGathering(characterName, token);
                             break;
                     }
                 }
