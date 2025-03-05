@@ -42,6 +42,7 @@ namespace ArtifactMMO
             characterTable.AddRow("[bold]Level[/]", character.Level.ToString() ?? "N/A");
             characterTable.AddRow("[bold]XP[/]", character.Xp.ToString() ?? "N/A");
             characterTable.AddRow("[bold]Gold[/]", character.Gold.ToString() ?? "N/A");
+            characterTable.AddRow("[bold]Max Items[/]", character.InventoryMaxItems.ToString() ?? "N/A");
 
             AnsiConsole.Write(characterTable);
 

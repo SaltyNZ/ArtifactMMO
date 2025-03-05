@@ -12,8 +12,7 @@ namespace ArtifactMMO
         [JsonPropertyName("data")]
         public TResponse? Data { get; set; }
     }
-
-    
+      
     // =======================
     // Movement API Response
     // =======================

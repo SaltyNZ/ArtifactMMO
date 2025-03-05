@@ -30,14 +30,13 @@ namespace ArtifactMMO
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
             MoveResponse? apiResponse = await HandlePostResponse<MoveResponse>(response);
-
             if(apiResponse != null && apiResponse is MoveResponse)
             {
                 int waitTime = apiResponse.Cooldown is not null
                 ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                Console.WriteLine($"Waittime = {waitTime}");
+                Console.WriteLine($"Waittime = {waitTime+1}");
 
-                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+                if (waitTime > 0) await ShowProgressBar($"Moving to ({x},{y}) in progress...", waitTime+1);
             }
         }
 
@@ -53,9 +52,9 @@ namespace ArtifactMMO
             {
                 int waitTime = apiResponse.Cooldown is not null
                 ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                Console.WriteLine($"Waittime = {waitTime}");
+                Console.WriteLine($"Waittime = {waitTime+1}");
 
-                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+                if (waitTime > 0) await ShowProgressBar("Attack in progress...", waitTime+1);
             }
         }
 
@@ -71,9 +70,9 @@ namespace ArtifactMMO
             {
                 int waitTime = apiResponse.Cooldown is not null
                 ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                Console.WriteLine($"Waittime = {waitTime}");
+                Console.WriteLine($"Waittime = {waitTime+1}");
 
-                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+                if (waitTime > 0) await ShowProgressBar("Resting in progress...", waitTime+1);
             }
         }
 
@@ -89,9 +88,9 @@ namespace ArtifactMMO
             {
                 int waitTime = apiResponse.Cooldown is not null
                 ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                Console.WriteLine($"Waittime = {waitTime}");
+                Console.WriteLine($"Waittime = {waitTime+1}");
 
-                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+                if (waitTime > 0) await ShowProgressBar("Gathering in progress...", waitTime+1);
             }
 
         }
@@ -108,9 +107,9 @@ namespace ArtifactMMO
             {
                 int waitTime = apiResponse.Cooldown is not null
                 ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                Console.WriteLine($"Waittime = {waitTime}");
+                Console.WriteLine($"Waittime = {waitTime+1}");
 
-                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+                if (waitTime > 0) await ShowProgressBar("Unequiping in progress...", waitTime+1);
             }
         }
 
@@ -126,9 +125,9 @@ namespace ArtifactMMO
             {
                 int waitTime = apiResponse.Cooldown is not null
                 ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                Console.WriteLine($"Waittime = {waitTime}");
+                Console.WriteLine($"Waittime = {waitTime+1}");
 
-                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+                if (waitTime > 0) await ShowProgressBar("Equiping in progress...", waitTime+1);
             }
         }
 
@@ -144,9 +143,9 @@ namespace ArtifactMMO
             {
                 int waitTime = apiResponse.Cooldown is not null
                 ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                Console.WriteLine($"Waittime = {waitTime}");
+                Console.WriteLine($"Waittime = {waitTime+1}");
 
-                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+                if (waitTime > 0) await ShowProgressBar("Crafting in progress...", waitTime+1);
             }
 
             return apiResponse;
@@ -165,9 +164,9 @@ namespace ArtifactMMO
             {
                 int waitTime = apiResponse.Cooldown is not null
                 ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                Console.WriteLine($"Waittime = {waitTime}");
+                Console.WriteLine($"Waittime = {waitTime+1}");
 
-                if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
+                if (waitTime > 0) await ShowProgressBar("Depositing in progress...", waitTime+1);
             }
         }
 

@@ -23,8 +23,11 @@ namespace ArtifactMMO
         {
             //Setting Variables
             int input = -1, x = 0, y = 0, qty = 1;
-            string characterName = "SaltyNZ", slot = "NoSlot", code = "NoCode";
+            string? characterName = "SaltyNZ", slot = "NoSlot", code = "NoCode";
             string token = Environment.GetEnvironmentVariable("ArtifactAPIKey") ?? "NoToken";
+
+            Console.WriteLine("Please type character");
+            characterName = Console.ReadLine();
             
             //Classes
             ArtifactApiService api = new ArtifactApiService();
