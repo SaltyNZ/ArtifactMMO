@@ -32,7 +32,7 @@ namespace ArtifactMMO
                     - return to mine
                 2. The Loop
                     A. Gather until the inventory is at capacity
-                    B. Move to crafting station and craft until you cant.
+                    B. Move to crafting station and craft.
                     C. Bank the Ingots
                     D. Move to gathering and repeat
 
@@ -92,9 +92,9 @@ namespace ArtifactMMO
                         }
 
                     //loop
-                    while(II < 1)
+                    while(II < 2)
                     {                       
-                        while(/*totalItems < charinfo.InventoryMaxItems*/ totalItems < 10) // or statement for testing
+                        while(totalItems < 10) // or statement for testing
                         {
                             Console.WriteLine("Loop Start");
                             if(Console.KeyAvailable)
@@ -149,29 +149,38 @@ namespace ArtifactMMO
                         await api.MoveCharacterAsync(characterName, token, 1, 5);
 
                         //Crafting Variables
-                        int craftQTY = totalItems / 10;
+                        int qty = totalItems / 10;
+                        Console.WriteLine(qty);
+                        string code = ingot;
+                        Console.WriteLine(code);
                     
                         //API
-                        /*
-                        url = $"https://api.artifactsmmo.com/my/{characterName}/action/crafting";
-                        var requestCraftBody = new { ingot, craftQTY };
-
-                        response = await api.SendPostRequest(url, requestCraftBody, token);
-                        craftResponse? apiCraftResponse = await api.HandlePostResponse<craftResponse>(response);
-
-                        if(apiCraftResponse != null && apiCraftResponse is craftResponse)
+                        if(qty > 0)
                         {
-                            int waitTime = apiCraftResponse.Cooldown is not null
-                            ? (int)(apiCraftResponse.Cooldown.Expiration - apiCraftResponse.Cooldown.StartedAt).TotalSeconds : 0;
-                            Console.WriteLine($"Waittime = {waitTime}");
+                            craftResponse? apiCraftResponse = await api.CraftAsync(characterName,token,code.ToLower(),qty);                      
 
-                            if (waitTime > 0) await ArtifactApiService.ShowProgressBar("Cooldown in progress...", waitTime);
+                            // -----------------
+                            //  BANKING INGOTS
+                            // -----------------
+
+                            await api.MoveCharacterAsync(characterName, token, 4, 1);
+                            foreach(var craftItem in apiCraftResponse.Character.Inventory)
+                            {
+                                if(craftItem.Quantity > 0 && craftItem.Code != ore)
+                                {
+                                    await api.BankItemsAsync(characterName, token, craftItem.Code, craftItem.Quantity);
+                                } 
+                                else if (craftItem.Quantity > 0 && craftItem.Code == ore)
+                                {
+                                    totalItems = craftItem.Quantity;
+                                    Console.WriteLine($"There is {craftItem.Quantity} {ore} in the inv so the total is now {totalItems} for total items");
+                                }
+                            }
                         }
-                        */
-                        Console.WriteLine($"CraftQTY: {craftQTY}");
-                        Console.WriteLine($"code: {ingot}");
-                        Console.WriteLine("END");
-                        break;
+
+                        await api.MoveCharacterAsync(characterName, token, gatherX, gatherY);
+
+
                         if(Console.KeyAvailable)
                         {
                             var key = Console.ReadKey(intercept: true).Key;

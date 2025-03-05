@@ -132,7 +132,7 @@ namespace ArtifactMMO
             }
         }
 
-        public async Task CraftAsync(string characterName, string token, string code, int quantity)
+        public async Task<craftResponse> CraftAsync(string characterName, string token, string code, int quantity)
         {
             string url = $"https://api.artifactsmmo.com/my/{characterName}/action/crafting";
             var requestBody = new { code, quantity };
@@ -148,6 +148,9 @@ namespace ArtifactMMO
 
                 if (waitTime > 0) await ShowProgressBar("Cooldown in progress...", waitTime);
             }
+
+            return apiResponse;
+
         }
 
         public async Task BankItemsAsync(string characterName, string token, string? code, int quantity)
