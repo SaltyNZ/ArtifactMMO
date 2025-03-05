@@ -71,8 +71,10 @@ namespace ArtifactMMO
                             Console.WriteLine($"There is {item.Quantity} in the inv so the total is now {totalItems} for total items");
                         }
                     }
-                    await api.MoveCharacterAsync(characterName,token,gatherX,gatherY);
+                    
                 }
+
+                await api.MoveCharacterAsync(characterName,token,gatherX,gatherY);
 
                 url = $"https://api.artifactsmmo.com/my/{characterName}/action/gathering";
                 requestBody = new { };
@@ -150,9 +152,9 @@ namespace ArtifactMMO
 
                         //Crafting Variables
                         int qty = totalItems / 10;
-                        Console.WriteLine(qty);
+                        Console.WriteLine($"{qty}");
                         string code = ingot;
-                        Console.WriteLine(code);
+                        Console.WriteLine($"{code}");
                     
                         //API
                         if(qty > 0)
@@ -198,6 +200,9 @@ namespace ArtifactMMO
                 else
                 {
                     Console.WriteLine("Errored");
+                    Console.WriteLine($"Error-01: {response.StatusCode}");
+                    string result = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Raw Response: {result}");
                 }
             }
         }
