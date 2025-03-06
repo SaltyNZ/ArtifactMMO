@@ -40,7 +40,7 @@ namespace ArtifactMMO
             }
         }
 
-        public async Task AttackAsync(string characterName, string token)
+        public async Task<AttackResponse?> AttackAsync(string characterName, string token)
         {
             string url = $"https://api.artifactsmmo.com/my/{characterName}/action/fight";
             var requestBody = new { };
@@ -56,6 +56,8 @@ namespace ArtifactMMO
 
                 if (waitTime > 0) await ShowProgressBar("Attack in progress...", waitTime+1);
             }
+
+            return apiResponse;
         }
 
         public async Task RestAsync(string characterName, string token)
@@ -131,7 +133,7 @@ namespace ArtifactMMO
             }
         }
 
-        public async Task<craftResponse> CraftAsync(string characterName, string token, string code, int quantity)
+        public async Task<craftResponse?> CraftAsync(string characterName, string token, string code, int quantity)
         {
             string url = $"https://api.artifactsmmo.com/my/{characterName}/action/crafting";
             var requestBody = new { code, quantity };
@@ -173,7 +175,7 @@ namespace ArtifactMMO
         // ========================================
         // Character API
         // ========================================
-        public async Task CharacterInfoAsync(string characterName, string token)
+        public async Task CharacterInfoUIAsync(string characterName, string token)
         {
             string url = $"https://api.artifactsmmo.com/characters/{characterName}";
             var requestBody = new {};
@@ -189,6 +191,26 @@ namespace ArtifactMMO
             else
             {
                 Console.WriteLine("(ArtifactAPIService-L181) Failed to convert API Response to Character Data.");
+            }
+
+        }
+
+        public async Task<characterInfoResponse?> CharacterInfoAsync(string characterName, string token)
+        {
+            string url = $"https://api.artifactsmmo.com/characters/{characterName}";
+            var requestBody = new {};
+
+            HttpResponseMessage response = await _client.GetAsync(url);
+            var characterInfoResponse = await HandleGetResponse<characterInfoResponse>(response);
+
+            if(characterInfoResponse != null && characterInfoResponse is characterInfoResponse)
+            {
+                return characterInfoResponse;
+            }
+            else
+            {
+                Console.WriteLine("(ArtifactAPIService-L181) Failed to convert API Response to Character Data.");
+                return null;
             }
 
         }

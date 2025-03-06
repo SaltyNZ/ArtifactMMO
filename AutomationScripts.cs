@@ -26,20 +26,30 @@ namespace ArtifactMMO
             /*
                 Steps:
                 1. Start up:
-                    - What Ingot (Manual atm)
-                    - Get Char info
-                    - Clear Inventory into bank if needed
-                    - return to mine
+                    - What Ingot - Done
+                    - Get Char info - Done
+                    - Clear Inventory into bank if needed - Done
+                    - return to mine - Done
                 2. The Loop
-                    A. Gather until the inventory is at capacity
-                    B. Move to crafting station and craft.
-                    C. Bank the Ingots
-                    D. Move to gathering and repeat
+                    A. Gather until the inventory is at capacity - Done
+                    B. Move to crafting station and craft. - Done
+                    C. Bank the Ingots - Done
+                    D. Move to gathering and repeat - Done
 
             */
             
             int totalItems = 0, totalOre = 0;
-            string ingot = "copper", ore = $"{ingot}_ore";
+
+            Console.WriteLine("type the code for the ingot:");
+            string? ingot = Console.ReadLine().ToLower() ?? null;
+            if(ingot == null)
+            {
+                Console.WriteLine("Invalid Item Code");
+                return;
+            }
+            string ore = $"{ingot}_ore";
+            
+            
             bool breaked = false;
 
 
@@ -176,7 +186,7 @@ namespace ArtifactMMO
                         }
                     }
                     
-                    Console.WriteLine("Moving back to copper and restart to the top");
+                    Console.WriteLine($"Moving back to {ingot} and restart to the top");
                     await api.MoveCharacterAsync(characterName, token, gatherX, gatherY);
 
 
@@ -193,6 +203,43 @@ namespace ArtifactMMO
                     Console.WriteLine("Loop End");          
                 }
             }
+        }
+        
+        public async Task AutoAttack(string characterName, string token)
+        {
+            // -----------------------------------------------------------------------------
+            // TODO
+            //  - Add Start Up Sequence
+            //  - Add Attacking
+            //  - Add Conditional Resting
+            //  - Add Bank Depositing if inventory is full
+            //  - Make sure the variables are rest correctly at the start of each loop
+            // -----------------------------------------------------------------------------
+
+            characterInfoResponse charinfo = await api.CharacterInfoAsync(characterName, token);
+
+            if(charinfo != null && charinfo is characterInfoResponse)
+            {
+                //DEFINE VARIABLES AND CLASSES
+                //Vars
+                int attackX = charinfo.X, attackY = charinfo.Y;
+                //Classes
+                AttackResponse attackInfo = new AttackResponse();
+                bankItemResponse bankItemInfo = new bankItemResponse();
+
+
+
+                //PRE-LOOP CHECKS
+
+                //if not full HP rest
+                if(charinfo.Hp != charinfo.MaxHp) {await api.RestAsync(characterName, token);}
+
+                while (true)
+                {
+                    
+                }
+            }
+            
         }
     }
 }

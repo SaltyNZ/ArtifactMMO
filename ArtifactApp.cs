@@ -45,7 +45,7 @@ namespace ArtifactMMO
                     switch (input)
                     {
                         case 1:
-                            await api.CharacterInfoAsync(characterName, token);
+                            await api.CharacterInfoUIAsync(characterName, token);
                             break;
                         case 2:
                             Console.WriteLine("Select X");
