@@ -41,7 +41,7 @@ namespace ArtifactMMO
             int totalItems = 0, totalOre = 0;
 
             Console.WriteLine("type the code for the ingot:");
-            string? ingot = Console.ReadLine().ToLower() ?? null;
+            string? ingot = Console.ReadLine()?.ToLower();
             if(ingot == null)
             {
                 Console.WriteLine("Invalid Item Code");
@@ -125,20 +125,24 @@ namespace ArtifactMMO
                                 Console.WriteLine($"weird waittime");
                                 break;
                             }
-                            foreach(var gathereditem in apiGatherResponse.Detail.Items)
+                            if (apiGatherResponse?.Detail?.Items != null)
                             {
-                                if(gathereditem.Code == ore)
+                                foreach(var gathereditem in apiGatherResponse.Detail.Items)
                                 {
-                                    totalItems += gathereditem.Quantity;
-                                    totalOre += gathereditem.Quantity;
-                                    Console.WriteLine($"Gathered {gathereditem.Quantity} of {gathereditem.Code} so the total is {totalItems}");
-                                }
-                                else if (gathereditem.Quantity > 0)
-                                {
-                                    totalItems += gathereditem.Quantity;
-                                    Console.WriteLine($"Gathered {gathereditem.Quantity} of {gathereditem.Code} so the total is {totalItems}");
+                                    if(gathereditem.Code == ore)
+                                    {
+                                        totalItems += gathereditem.Quantity;
+                                        totalOre += gathereditem.Quantity;
+                                        Console.WriteLine($"Gathered {gathereditem.Quantity} of {gathereditem.Code} so the total is {totalItems}");
+                                    }
+                                    else if (gathereditem.Quantity > 0)
+                                    {
+                                        totalItems += gathereditem.Quantity;
+                                        Console.WriteLine($"Gathered {gathereditem.Quantity} of {gathereditem.Code} so the total is {totalItems}");
+                                    }
                                 }
                             }
+                            
                         }
                     }
 
@@ -171,19 +175,24 @@ namespace ArtifactMMO
                         Console.WriteLine("Moving Items to bank");
                         totalItems = 0;
                         totalOre = 0;
-                        foreach(var craftItem in apiCraftResponse.Character.Inventory)
+
+                        if(apiCraftResponse?.Character?.Inventory != null)
                         {
-                            if(craftItem.Quantity > 0 && craftItem.Code != ore)
+                            foreach(var craftItem in apiCraftResponse.Character.Inventory)
                             {
-                                await api.BankItemsAsync(characterName, token, craftItem.Code, craftItem.Quantity);
-                            } 
-                            else if (craftItem.Quantity > 0 && craftItem.Code == ore)
-                            {
-                                totalItems = craftItem.Quantity;
-                                totalOre = craftItem.Quantity;
-                                Console.WriteLine($"There is still {craftItem.Quantity} {ore} in the inv after crafting so the total is now {totalItems} for total items");
+                                if(craftItem.Quantity > 0 && craftItem.Code != ore)
+                                {
+                                    await api.BankItemsAsync(characterName, token, craftItem.Code, craftItem.Quantity);
+                                } 
+                                else if (craftItem.Quantity > 0 && craftItem.Code == ore)
+                                {
+                                    totalItems = craftItem.Quantity;
+                                    totalOre = craftItem.Quantity;
+                                    Console.WriteLine($"There is still {craftItem.Quantity} {ore} in the inv after crafting so the total is now {totalItems} for total items");
+                                }
                             }
                         }
+                        
                     }
                     
                     Console.WriteLine($"Moving back to {ingot} and restart to the top");
@@ -216,16 +225,18 @@ namespace ArtifactMMO
             //  - Make sure the variables are rest correctly at the start of each loop
             // -----------------------------------------------------------------------------
 
-            characterInfoResponse charinfo = await api.CharacterInfoAsync(characterName, token);
+            characterInfoResponse? charinfo = await api.CharacterInfoAsync(characterName, token);
 
             if(charinfo != null && charinfo is characterInfoResponse)
             {
                 //DEFINE VARIABLES AND CLASSES
                 //Vars
-                int attackX = charinfo.X, attackY = charinfo.Y;
+                int attackX = charinfo.X, attackY = charinfo.Y, totalItems = 0, maxItems = 0;
+                double healthLeft = 0;
                 //Classes
-                AttackResponse attackInfo = new AttackResponse();
-                bankItemResponse bankItemInfo = new bankItemResponse();
+                AttackResponse? attackInfo = new AttackResponse();
+                bankItemResponse? bankItemInfo = new bankItemResponse();
+                MoveResponse? moveInfo = new MoveResponse();
 
 
 
@@ -236,6 +247,56 @@ namespace ArtifactMMO
 
                 while (true)
                 {
+                    Console.WriteLine("Moving to the Bank");
+                    moveInfo = await api.MoveCharacterAsync(characterName, token, 4, 1);
+
+                    if(moveInfo != null)
+                    {
+                        if(moveInfo?.Character?.Inventory != null)
+                        {
+                            foreach(var item in moveInfo.Character.Inventory)
+                            {
+                                if(item.Quantity > 0)
+                                {
+                                    await api.BankItemsAsync(characterName, token, item.Code, item.Quantity);
+                                }
+                            }
+
+                            totalItems = 0;
+                            maxItems = moveInfo.Character.MaxHp;
+                            moveInfo = await api.MoveCharacterAsync(characterName, token, attackX, attackY);
+
+                        }
+                        
+                    }
+
+                    while(totalItems < maxItems)
+                    {
+                        Console.WriteLine("Attacking");
+                        attackInfo = await api.AttackAsync(characterName, token);
+
+                        if(attackInfo?.Character != null)
+                        {
+                            healthLeft = (double)attackInfo.Character.Hp/(double)attackInfo.Character.MaxHp;
+                            if(healthLeft < 0.40)
+                            {
+                                Console.WriteLine($"Resting because the hp is at {healthLeft*100}% of Max HP");
+                                await api.RestAsync(characterName, token);
+                            }
+                        }
+                        if(attackInfo?.Fight?.Drops != null)
+                        {
+                            foreach(var drop in attackInfo.Fight.Drops)
+                            {
+                                if(drop.Quantity > 0)
+                                {
+                                    totalItems += drop.Quantity;
+                                    Console.WriteLine($"The total amount of items is {totalItems}");
+                                }
+                            }
+                        }                       
+                    }
+
                     
                 }
             }

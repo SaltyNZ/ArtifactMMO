@@ -27,7 +27,8 @@ namespace ArtifactMMO
             Console.WriteLine("6. Unequip");
             Console.WriteLine("7. Equip");
             Console.WriteLine("8. Crafting");
-            Console.WriteLine("9. Auto Test");
+            Console.WriteLine("9. Automatic Ingot Mining");
+            Console.WriteLine("10. Automatic Attacking");
             Console.WriteLine("0. Exit");
         }
 

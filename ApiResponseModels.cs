@@ -35,6 +35,33 @@ namespace ArtifactMMO
     {
         [JsonPropertyName("cooldown")]
         public CooldownData? Cooldown { get; set; }
+
+        [JsonPropertyName("character")]
+        public characterInfoResponse? Character { get; set; }
+
+        [JsonPropertyName("fight")]
+        public FightInfoResponse? Fight { get; set; }
+    }
+
+    public class FightInfoResponse
+    {
+        [JsonPropertyName("xp")]
+        public int XP { get; set; }
+
+        [JsonPropertyName("gold")]
+        public int Gold { get; set; }
+
+        [JsonPropertyName("drops")]
+        public List<FightItemsData>? Drops { get; set; }
+    }
+
+    public class FightItemsData
+    {
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
+
+        [JsonPropertyName("quantity")]
+        public int Quantity { get; set; }
     }
 
     // =======================

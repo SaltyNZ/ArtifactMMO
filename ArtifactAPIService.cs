@@ -23,7 +23,7 @@ namespace ArtifactMMO
         // ====================
         // Action API Methods 
         // ====================
-        public async Task MoveCharacterAsync(string characterName, string token, int x, int y)
+        public async Task<MoveResponse?> MoveCharacterAsync(string characterName, string token, int x, int y)
         {
             string url = $"https://api.artifactsmmo.com/my/{characterName}/action/move";
             var requestBody = new { x, y };
@@ -38,6 +38,9 @@ namespace ArtifactMMO
 
                 if (waitTime > 0) await ShowProgressBar($"Moving to ({x},{y}) in progress...", waitTime+1);
             }
+
+            return apiResponse;
+
         }
 
         public async Task<AttackResponse?> AttackAsync(string characterName, string token)

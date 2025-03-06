@@ -45,7 +45,7 @@ namespace ArtifactMMO
                     switch (input)
                     {
                         case 1:
-                            await api.CharacterInfoUIAsync(characterName, token);
+                            await api.CharacterInfoUIAsync(characterName ?? "", token);
                             break;
                         case 2:
                             Console.WriteLine("Select X");
@@ -54,7 +54,7 @@ namespace ArtifactMMO
                                 Console.WriteLine("Select Y");
                                 if (int.TryParse(Console.ReadLine(), out y))
                                 {
-                                    await api.MoveCharacterAsync(characterName, token, x, y);
+                                    await api.MoveCharacterAsync(characterName ?? "", token, x, y);
                                 }
                                 else
                                 {
@@ -67,18 +67,18 @@ namespace ArtifactMMO
                             }
                             break;
                         case 3:
-                            await api.AttackAsync(characterName, token);
+                            await api.AttackAsync(characterName ?? "", token);
                             break;
                         case 4:
-                            await api.RestAsync(characterName, token);
+                            await api.RestAsync(characterName ?? "", token);
                             break;
                         case 5:
-                            await api.GatheringAsync(characterName, token);
+                            await api.GatheringAsync(characterName ?? "", token);
                             break;
                         case 6:
                             Console.WriteLine("Please type the slot");
                             slot = Console.ReadLine() ?? "";
-                            if(ui.isValidEquipment(slot) && slot != null) await api.UnequipAsync(characterName, token, slot.ToLower());
+                            if(ui.isValidEquipment(slot) && slot != null) await api.UnequipAsync(characterName ?? "", token, slot.ToLower());
                             break;
                         case 7:
                             Console.WriteLine("Please type the slot");
@@ -87,7 +87,7 @@ namespace ArtifactMMO
                             {
                                 Console.WriteLine("Please type the item code to equip");
                                 code = Console.ReadLine() ?? "";
-                                if(ui.isValidCraft(code) && code != null) await api.EquipAsync(characterName,token,code.ToLower(),slot.ToLower());
+                                if(ui.isValidCraft(code) && code != null) await api.EquipAsync(characterName ?? "",token,code.ToLower(),slot.ToLower());
                             }
                             break;
                         case 8:
@@ -96,7 +96,7 @@ namespace ArtifactMMO
                             Console.WriteLine("Please select No of items");
                             if(int.TryParse(Console.ReadLine(), out qty))
                             {
-                                if(ui.isValidCraft(userInput ?? "") && userInput != null) await api.CraftAsync(characterName,token,code.ToLower(),qty);
+                                if(ui.isValidCraft(userInput ?? "") && userInput != null) await api.CraftAsync(characterName ?? "",token,code.ToLower(),qty);
                             }
                             else
                             {
@@ -104,7 +104,10 @@ namespace ArtifactMMO
                             }                            
                             break;
                         case 9:
-                            await auto.AutoIngotGathering(characterName, token);
+                            await auto.AutoIngotGathering(characterName ?? "", token);
+                            break;
+                        case 10:
+                            await auto.AutoAttack(characterName ?? "", token);
                             break;
                     }
                 }
