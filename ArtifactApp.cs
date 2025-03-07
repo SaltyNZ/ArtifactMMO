@@ -104,10 +104,35 @@ namespace ArtifactMMO
                             }                            
                             break;
                         case 9:
-                            await auto.AutoIngotGathering(characterName ?? "", token);
-                            break;
-                        case 10:
-                            await auto.AutoAttack(characterName ?? "", token);
+                    
+                            while(input != 0)
+                            {
+                                ui.AutoUIWriteLine();
+                                userInput = Console.ReadLine();
+                                if (int.TryParse(userInput, out input))
+                                {   
+                                    switch(input)
+                                    {
+                                        case 1: //Auto Ingot
+                                            await auto.AutoIngotGathering(characterName ?? "", token);
+                                            break;
+                                        case 2: //Auto Attack
+                                            await auto.AutoAttack(characterName ?? "", token);
+                                            break;
+                                        case 3: // Auto Plank
+                                            await auto.AutoPlankGathering(characterName ?? "", token);
+                                            break;
+                                        case 4: // Auto Task
+                                            await auto.AutoBasicItemTask(characterName ?? "", token);
+                                            break;
+                                        case 0: // Exit
+
+                                            break;
+                                    }
+                                    
+                                }
+                            }
+                            input = 9;
                             break;
                     }
                 }

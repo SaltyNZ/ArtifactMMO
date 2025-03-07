@@ -81,7 +81,7 @@ namespace ArtifactMMO
             }
         }
 
-        public async Task GatheringAsync(string characterName, string token)
+        public async Task<gatheringResponse?> GatheringAsync(string characterName, string token)
         {
             string url = $"https://api.artifactsmmo.com/my/{characterName}/action/gathering";
             var requestBody = new { };
@@ -97,6 +97,8 @@ namespace ArtifactMMO
 
                 if (waitTime > 0) await ShowProgressBar("Gathering in progress...", waitTime+1);
             }
+
+            return apiResponse;
 
         }
 
@@ -160,6 +162,24 @@ namespace ArtifactMMO
         public async Task BankItemsAsync(string characterName, string token, string? code, int quantity)
         {
             string url = $"https://api.artifactsmmo.com/my/{characterName}/action/bank/deposit";
+            var requestBody = new { code, quantity };
+
+            HttpResponseMessage response = await SendPostRequest(url, requestBody, token);
+            bankItemResponse? apiResponse = await HandlePostResponse<bankItemResponse>(response);
+
+            if(apiResponse != null && apiResponse is bankItemResponse)
+            {
+                int waitTime = apiResponse.Cooldown is not null
+                ? (int)(apiResponse.Cooldown.Expiration - apiResponse.Cooldown.StartedAt).TotalSeconds : 0;
+                Console.WriteLine($"Waittime = {waitTime+1}");
+
+                if (waitTime > 0) await ShowProgressBar("Depositing in progress...", waitTime+1);
+            }
+        }
+
+        public async Task HandItemTasks(string characterName, string token, string code, int quantity)
+        {
+            string url = $"https://api.artifactsmmo.com/my/{characterName}/action/task/trade";
             var requestBody = new { code, quantity };
 
             HttpResponseMessage response = await SendPostRequest(url, requestBody, token);

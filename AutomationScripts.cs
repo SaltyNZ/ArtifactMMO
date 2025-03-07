@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.Metrics;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
@@ -217,7 +218,7 @@ namespace ArtifactMMO
         public async Task AutoAttack(string characterName, string token)
         {
             // -----------------------------------------------------------------------------
-            // TODO
+            //  TODO - Done 7/03/2025
             //  - Add Start Up Sequence
             //  - Add Attacking
             //  - Add Conditional Resting
@@ -263,7 +264,7 @@ namespace ArtifactMMO
                             }
 
                             totalItems = 0;
-                            maxItems = moveInfo.Character.MaxHp;
+                            maxItems = moveInfo.Character.InventoryMaxItems;
                             moveInfo = await api.MoveCharacterAsync(characterName, token, attackX, attackY);
 
                         }
@@ -301,6 +302,115 @@ namespace ArtifactMMO
                 }
             }
             
+        }
+    
+        public async Task AutoBasicItemTask(string characterName, string token)
+        {
+            //----------------------------------------------------
+            //  TODO
+            //  - Create Starting Sequence
+            //  - Harvest Item
+            //  - Trade in item
+            //  - Complete Task when all items are handed in
+            //  - Stop when Task completed
+            //----------------------------------------------------
+
+            characterInfoResponse? charinfo = await api.CharacterInfoAsync(characterName, token);
+
+            if(charinfo != null)
+            {
+                //DEFINE VARIABLES AND CLASSES
+                //Vars
+                int gatherX = charinfo.X, gatherY = charinfo.Y, totalItems = 0, totalTaskItems = 0;
+                //Classes
+                gatheringResponse gatheringInfo = new gatheringResponse();
+                MoveResponse? moveInfo = new MoveResponse();
+            }
+            
+    }
+
+        public async Task AutoPlankGathering(string characterName, string token)
+        {
+            characterInfoResponse? charInfo = await api.CharacterInfoAsync(characterName, token);
+
+            if(charInfo != null)
+            {
+                int? gatherX = charInfo.X, gatherY = charInfo.Y, totalItems = 0, maxItems = charInfo.InventoryMaxItems;
+                int  totalWood = 0, qty= 0;
+                gatheringResponse? gatheringInfo = new gatheringResponse();
+                bankItemResponse? bankItemInfo = new bankItemResponse();
+                MoveResponse? moveInfo = new MoveResponse();
+
+
+                Console.WriteLine("Please type a wood type:");
+                string? wood = Console.ReadLine()?.ToLower();
+                string plank = $"{wood}_plank";
+                wood = $"{wood}_wood";
+
+
+                
+                
+                Console.WriteLine($"Wood Code = {wood}");
+                Console.WriteLine($"Plank Code = {plank}");
+
+                //get current items total
+                if(charInfo?.Inventory != null)
+                {
+                    foreach(var item in charInfo.Inventory)
+                    {
+                        if(item.Code == wood)
+                        {
+                            totalWood += item.Quantity;
+                            totalItems += item.Quantity;
+                            Console.WriteLine($"There was {totalWood} of {wood} in the inventory and the overall item total is {totalItems}.");
+                            
+                        } else if (item.Quantity > 0)
+                        {
+                            totalItems += item.Quantity;
+                            Console.WriteLine($"There was {item.Quantity} of {item.Code} so the new total is {totalItems}");
+                        }
+                    }
+                }
+
+                //Start Loop
+                while(true)
+                {
+                    while(totalItems < maxItems)
+                    {
+                        gatheringInfo = await api.GatheringAsync(characterName, token);
+
+                        if(gatheringInfo?.Detail?.Items != null)
+                        {
+                            foreach(var item in gatheringInfo.Detail.Items)
+                            {
+                                if(item.Code == wood)
+                                {
+                                    totalWood += item.Quantity;
+                                    totalItems += item.Quantity;
+                                    Console.WriteLine($"gathered {item.Quantity} of {wood} the overall {wood} total is {totalWood} and INV total is {totalItems}.");
+                                } else if (item.Quantity > 0)
+                                {
+                                    totalItems += item.Quantity;
+                                    Console.WriteLine($"gathered {item.Quantity} of {item.Code} the INV total is {totalItems}.");
+                                }
+                            }
+                        }
+                        
+                    }
+
+                    //Crafting
+                    await api.MoveCharacterAsync(characterName, token, -2, -3);
+
+                    qty = totalWood/10;
+
+                    await api.CraftAsync(characterName, token, plank, qty);
+
+                    
+
+                }
+                
+
+            }
         }
     }
 }

@@ -29,6 +29,19 @@ namespace ArtifactMMO
     }
 
     // =======================
+    // Trade API Response
+    // =======================
+
+    public class TradeItemResponse : IHasCooldown
+    {
+        [JsonPropertyName("cooldown")]
+        public CooldownData? Cooldown { get; set; }
+
+        [JsonPropertyName("character")]
+        public characterInfoResponse? Character { get; set; }
+    }
+
+    // =======================
     // Attack API Response
     // =======================
     public class AttackResponse : IHasCooldown
