@@ -1,7 +1,9 @@
 using System;
 using System.Diagnostics.Metrics;
+using System.Linq.Expressions;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Security.Principal;
 using System.Text;
@@ -233,7 +235,14 @@ namespace ArtifactMMO
                 //DEFINE VARIABLES AND CLASSES
                 //Vars
                 int attackX = charinfo.X, attackY = charinfo.Y, totalItems = 0, maxItems = 0;
-                double healthLeft = 0;
+                double healthLeft, healthLeftPercent = 0;
+                Console.WriteLine("Type health left as percent decimal example (0.4)");
+
+                string? healthLeftstring = Console.ReadLine();
+                if(double.TryParse(healthLeftstring, out double healthLeftout))
+                {
+                    healthLeftPercent = healthLeftout;
+                }
                 //Classes
                 AttackResponse? attackInfo = new AttackResponse();
                 bankItemResponse? bankItemInfo = new bankItemResponse();
@@ -279,7 +288,7 @@ namespace ArtifactMMO
                         if(attackInfo?.Character != null)
                         {
                             healthLeft = (double)attackInfo.Character.Hp/(double)attackInfo.Character.MaxHp;
-                            if(healthLeft < 0.40)
+                            if(healthLeft < healthLeftPercent)
                             {
                                 Console.WriteLine($"Resting because the hp is at {healthLeft*100}% of Max HP");
                                 await api.RestAsync(characterName, token);
@@ -335,11 +344,12 @@ namespace ArtifactMMO
 
             if(charInfo != null)
             {
-                int? gatherX = charInfo.X, gatherY = charInfo.Y, totalItems = 0, maxItems = charInfo.InventoryMaxItems;
-                int  totalWood = 0, qty= 0;
+                int? totalItems = 0, maxItems = charInfo.InventoryMaxItems;
+                int  totalWood = 0, qty= 0, gatherX = charInfo.X, gatherY = charInfo.Y;
                 gatheringResponse? gatheringInfo = new gatheringResponse();
                 bankItemResponse? bankItemInfo = new bankItemResponse();
                 MoveResponse? moveInfo = new MoveResponse();
+                craftResponse? craftInfo = new craftResponse();
 
 
                 Console.WriteLine("Please type a wood type:");
@@ -403,13 +413,37 @@ namespace ArtifactMMO
 
                     qty = totalWood/10;
 
-                    await api.CraftAsync(characterName, token, plank, qty);
+                    if(qty > 0)
+                    {
+                        await api.CraftAsync(characterName, token, plank, qty);
+                    }
 
-                    
+                    Console.WriteLine("Moving to the bank");
+                    moveInfo = await api.MoveCharacterAsync(characterName, token, 4, 1);
+                    Console.WriteLine("Moving Items to bank");
+                    totalItems = 0;
+                    totalWood = 0;
+
+                    if(moveInfo?.Character?.Inventory != null)
+                    {
+                        foreach(var item in moveInfo.Character.Inventory)
+                        {
+                            if(item.Quantity > 0 && item.Code != wood)
+                            {
+                                await api.BankItemsAsync(characterName, token, item.Code, item.Quantity);
+                            } 
+                            else if (item.Quantity > 0 && item.Code == wood)
+                            {
+                                totalItems = item.Quantity;
+                                totalWood = item.Quantity;
+                                Console.WriteLine($"There is still {item.Quantity} {wood} in the inv after crafting so the total is now {totalItems} for total items");
+                            }
+                        }
+                    }
+
+                    await api.MoveCharacterAsync(characterName, token, gatherX, gatherY);
 
                 }
-                
-
             }
         }
     }
