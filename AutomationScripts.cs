@@ -334,6 +334,9 @@ namespace ArtifactMMO
                 //Classes
                 gatheringResponse gatheringInfo = new gatheringResponse();
                 MoveResponse? moveInfo = new MoveResponse();
+
+                Console.WriteLine(totalItems);
+                Console.WriteLine(totalTaskItems);
             }
             
     }
