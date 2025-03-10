@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Spectre.Console;
 using Spectre.Console.Json;
+using Microsoft.Data.Sqlite;
 
     /*
         2.0 Rewrite
