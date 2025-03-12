@@ -60,6 +60,7 @@ namespace ArtifactMMO
                     break;
                 
                 case "Auto Ingot":
+                    await auto.AutoIngotGathering(characterName, token);
                     AnsiConsole.WriteLine($"You selected {uiChoice}");
                     break;
 
