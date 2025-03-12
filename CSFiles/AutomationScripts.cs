@@ -43,6 +43,9 @@ namespace ArtifactMMO
             
             int totalItems = 0, totalOre = 0;
 
+            gatheringResponse? apiGatherResponse = new gatheringResponse();
+            craftResponse? apiCraftResponse = new craftResponse();
+
             Console.WriteLine("type the code for the ingot:");
             string? ingot = Console.ReadLine()?.ToLower();
             if(ingot == null)
@@ -51,17 +54,11 @@ namespace ArtifactMMO
                 return;
             }
             string ore = $"{ingot}_ore";
-            
-            
-            bool breaked = false;
 
 
             Console.WriteLine("STARTING GATHERING TASK");
-            string url = $"https://api.artifactsmmo.com/characters/{characterName}";
-            var requestBody = new {};
 
-            HttpResponseMessage response = await _client.GetAsync(url);
-            var charinfo = await api.HandleGetResponse<characterInfoResponse>(response);
+            var charinfo = await api.CharacterInfoAsync(characterName, token);
 
 
             //get location that will be the primary resource gathering.
@@ -72,12 +69,14 @@ namespace ArtifactMMO
                 Console.WriteLine("Emptying Inventory");
                 if(charinfo.Inventory != null)
                 {
-                    await api.MoveCharacterAsync(characterName, token, 4, 1);
+                    //await api.MoveCharacterAsync(characterName, token, 4, 1);
+                    await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new { x=4, y=1}, "Moving:");
                     foreach(var item in charinfo.Inventory)
                     {
                         if(item.Quantity > 0 && item.Code != ore)
                         {
-                            await api.BankItemsAsync(characterName, token, item.Code, item.Quantity);
+                            //await api.BankItemsAsync(characterName, token, item.Code, item.Quantity);
+                            await api.PerformActionAsync<bankItemResponse>(characterName, token, "bank/deposit", new {code = item.Code, quantity = item.Quantity}, $"Banking {item.Code}:");
                         } 
                         else if (item.Quantity > 0 && item.Code == ore)
                         {
@@ -89,45 +88,18 @@ namespace ArtifactMMO
                     
                 }
 
-                await api.MoveCharacterAsync(characterName,token,gatherX,gatherY);
+                //await api.MoveCharacterAsync(characterName,token,gatherX,gatherY);
+                await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new { x=gatherX, y=gatherY}, "Moving:");
 
                 //loop
                 while(true)
                 {                       
                     while(totalItems < charinfo.InventoryMaxItems) // or statement for testing
                     {
-                        if(Console.KeyAvailable)
-                        {
-                            var key = Console.ReadKey(intercept: true).Key;
-
-                            if(key == ConsoleKey.Escape)
-                            {
-                                Console.WriteLine("Ending Loop as ESC was pressed");
-                                breaked = true;
-                                break;
-                            }
-                        }
-
-                        url = $"https://api.artifactsmmo.com/my/{characterName}/action/gathering";
-                        requestBody = new { };
-
-                        response = await api.SendPostRequest(url, requestBody, token);
-                        gatheringResponse? apiGatherResponse = await api.HandlePostResponse<gatheringResponse>(response);
-
+                        apiGatherResponse = await api.PerformActionAsync<gatheringResponse>(characterName, token, "gathering", new{}, "Gathering:");
+                        
                         if(apiGatherResponse != null && apiGatherResponse is gatheringResponse)
                         {
-                            int waitTime = apiGatherResponse.Cooldown is not null
-                            ? (int)(apiGatherResponse.Cooldown.Expiration - apiGatherResponse.Cooldown.StartedAt).TotalSeconds : 0;                           
-
-                            if (waitTime > 0)
-                            {
-                                await ArtifactApiService.ShowProgressBar("Gathering in progress...", waitTime);
-                            }
-                            else
-                            {
-                                Console.WriteLine($"weird waittime");
-                                break;
-                            }
                             if (apiGatherResponse?.Detail?.Items != null)
                             {
                                 foreach(var gathereditem in apiGatherResponse.Detail.Items)
@@ -145,18 +117,16 @@ namespace ArtifactMMO
                                     }
                                 }
                             }
-                            
                         }
+                    
                     }
-
-                    if(breaked == true) break;
 
 
                     // -----------------
                     //     CRAFTING
                     // -----------------
                     Console.WriteLine("Moving to Crafting Station");
-                    await api.MoveCharacterAsync(characterName, token, 1, 5);
+                    await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new { x=1, y=5}, "Moving to crafting:");
 
                     //Crafting Variables
                     int qty = totalOre / 10;
@@ -168,14 +138,15 @@ namespace ArtifactMMO
                     if(qty > 0)
                     {
                         Console.WriteLine($"Crafting {qty} {code} ingots");
-                        craftResponse? apiCraftResponse = await api.CraftAsync(characterName,token,code.ToLower(),qty);                      
+                        //apiCraftResponse = await api.CraftAsync(characterName,token,code.ToLower(),qty);
+                        apiCraftResponse = await api.PerformActionAsync<craftResponse>(characterName, token, "crafting", new { code = code, quantity = qty}, $"Crafting {code}");                      
 
                         // -----------------
                         //  BANKING INGOTS
                         // -----------------
-                        Console.WriteLine("Moving to the bank");
-                        await api.MoveCharacterAsync(characterName, token, 4, 1);
-                        Console.WriteLine("Moving Items to bank");
+
+                        await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new { x=4, y=1}, "Moving to bank:");
+
                         totalItems = 0;
                         totalOre = 0;
 
@@ -185,7 +156,7 @@ namespace ArtifactMMO
                             {
                                 if(craftItem.Quantity > 0 && craftItem.Code != ore)
                                 {
-                                    await api.BankItemsAsync(characterName, token, craftItem.Code, craftItem.Quantity);
+                                    await api.PerformActionAsync<bankItemResponse>(characterName, token, "bank/deposit", new {code = craftItem.Code, quantity = craftItem.Quantity}, "Banking:");
                                 } 
                                 else if (craftItem.Quantity > 0 && craftItem.Code == ore)
                                 {
@@ -199,19 +170,8 @@ namespace ArtifactMMO
                     }
                     
                     Console.WriteLine($"Moving back to {ingot} and restart to the top");
-                    await api.MoveCharacterAsync(characterName, token, gatherX, gatherY);
+                    await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new { x=gatherX, y=gatherY}, "Moving:");
 
-
-                    if(Console.KeyAvailable)
-                    {
-                        var key = Console.ReadKey(intercept: true).Key;
-
-                        if(key == ConsoleKey.Escape)
-                        {
-                            Console.WriteLine("Ending Loop as ESC was pressed");
-                            break;
-                        }
-                    }
                     Console.WriteLine("Loop End");          
                 }
             }
@@ -257,8 +217,7 @@ namespace ArtifactMMO
 
                 while (true)
                 {
-                    Console.WriteLine("Moving to the Bank");
-                    moveInfo = await api.MoveCharacterAsync(characterName, token, 4, 1);
+                    moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move",new {x=4, y=1}, "Moving to the Bank");
 
                     if(moveInfo != null)
                     {
@@ -268,13 +227,13 @@ namespace ArtifactMMO
                             {
                                 if(item.Quantity > 0)
                                 {
-                                    await api.BankItemsAsync(characterName, token, item.Code, item.Quantity);
+                                    await api.PerformActionAsync<bankItemResponse>(characterName, token, "bank/deposit", new {code = item.Code, quantity = item.Quantity}, $"Banking {item.Code}:");
                                 }
                             }
 
                             totalItems = 0;
                             maxItems = moveInfo.Character.InventoryMaxItems;
-                            moveInfo = await api.MoveCharacterAsync(characterName, token, attackX, attackY);
+                            moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move",new {x=attackX, y=attackY}, "Moving to the Mob");
 
                         }
                         
@@ -282,8 +241,7 @@ namespace ArtifactMMO
 
                     while(totalItems < maxItems)
                     {
-                        Console.WriteLine("Attacking");
-                        attackInfo = await api.AttackAsync(characterName, token);
+                        attackInfo = await api.PerformActionAsync<AttackResponse>(characterName, token, "attack", new{}, "Attacking Mob");
 
                         if(attackInfo?.Character != null)
                         {

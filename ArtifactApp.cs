@@ -3,147 +3,83 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Spectre.Console;
+using Spectre.Console.Json;
+using Microsoft.Data.Sqlite;
 
     /*
-    Current TODO List:
-    - Add Loading Bar with the cooldown recived from API - Done - 27/2/25
-    - Add more basic options to do basic game mechanics such as chop wood and craft. - Done - 28/2/25
-    - Add some Automation using the basic options - Done
-    - Get a report of data so you dont need to see the screen like Inventory, Level, Location, gold etc. - Kinda
-    - Optimize and Improve the Console UI using Spectre.Console - Kinda
+        2.0 Rewrite
+            - Redo the UI fully using Console.Spectre as the foundation from the get go to provide clarity.
+            - Use SQLLite where possible.
+            - Redo the API Calling process to be more streamlined and less garbled.
+            - Start work on the Fully automated gathering system using SQLLite
+            - Create a Ordering system for the crafter.
     */
 
 namespace ArtifactMMO
 {
     public class ArtifactApp
     {
-        private static readonly HttpClient client = new HttpClient();
-
         public static async Task Main(string[] args)
         {
-            //Setting Variables
-            int input = -1, x = 0, y = 0, qty = 1;
-            string? characterName = "SaltyNZ", slot = "NoSlot", code = "NoCode";
+            // ----------------------
+            //    Define Variables
+            // ----------------------
+            
+            //Variables
             string token = Environment.GetEnvironmentVariable("ArtifactAPIKey") ?? "NoToken";
 
-            Console.WriteLine("Please type character");
-            characterName = Console.ReadLine();
-            
             //Classes
             ArtifactApiService api = new ArtifactApiService();
             UI ui = new UI();
             AutomationScripts auto = new AutomationScripts();
 
-            //Main Process
-            while (input != 0)
+
+            // -------------------
+            //    Start up Menu
+            // -------------------
+            var characterName = AnsiConsole.Prompt(
+            new TextPrompt<string>("What's your [red]character's[/] name?"));
+            AnsiConsole.WriteLine($"Character name is: {characterName}");
+
+            var uiChoice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("[blue]Select what command to use: :computer_disk:[/]")
+                    .PageSize(10)
+                    .MoreChoicesText("[blue](Move up and down to see more selections)[/]")
+                    .AddChoices(new[] {
+                        "Character Info","Auto Ingot",
+                        "Auto Attack","Auto Plank",
+                        "Auto Task","Exit"
+                }));
+
+            switch (uiChoice)
             {
-                ui.MainUIWriteLine();
-                string? userInput = Console.ReadLine();
-                if (int.TryParse(userInput, out input))
-                {
+                case "Character Info":
+                    await api.CharacterInfoUIAsync(characterName ?? "", token);
+                    break;
+                
+                case "Auto Ingot":
+                    await auto.AutoIngotGathering(characterName, token);
+                    AnsiConsole.WriteLine($"You selected {uiChoice}");
+                    break;
 
-                    switch (input)
-                    {
-                        case 1:
-                            await api.CharacterInfoUIAsync(characterName ?? "", token);
-                            break;
-                        case 2:
-                            Console.WriteLine("Select X");
-                            if (int.TryParse(Console.ReadLine(), out x))
-                            {
-                                Console.WriteLine("Select Y");
-                                if (int.TryParse(Console.ReadLine(), out y))
-                                {
-                                    await api.MoveCharacterAsync(characterName ?? "", token, x, y);
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Invalid input. Please enter a valid number.");
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine("Invalid input. Please enter a valid number.");
-                            }
-                            break;
-                        case 3:
-                            await api.AttackAsync(characterName ?? "", token);
-                            break;
-                        case 4:
-                            await api.RestAsync(characterName ?? "", token);
-                            break;
-                        case 5:
-                            await api.GatheringAsync(characterName ?? "", token);
-                            break;
-                        case 6:
-                            Console.WriteLine("Please type the slot");
-                            slot = Console.ReadLine() ?? "";
-                            if(ui.isValidEquipment(slot) && slot != null) await api.UnequipAsync(characterName ?? "", token, slot.ToLower());
-                            break;
-                        case 7:
-                            Console.WriteLine("Please type the slot");
-                            slot = Console.ReadLine() ?? "";
-                            if(ui.isValidEquipment(slot) && slot != null)
-                            {
-                                Console.WriteLine("Please type the item code to equip");
-                                code = Console.ReadLine() ?? "";
-                                if(ui.isValidCraft(code) && code != null) await api.EquipAsync(characterName ?? "",token,code.ToLower(),slot.ToLower());
-                            }
-                            break;
-                        case 8:
-                            Console.WriteLine("Please type what you want to craft");
-                            code = Console.ReadLine() ?? "";
-                            Console.WriteLine("Please select No of items");
-                            if(int.TryParse(Console.ReadLine(), out qty))
-                            {
-                                if(ui.isValidCraft(userInput ?? "") && userInput != null) await api.CraftAsync(characterName ?? "",token,code.ToLower(),qty);
-                            }
-                            else
-                            {
-                                Console.WriteLine("Invalid QTY");
-                            }                            
-                            break;
-                        case 9:
-                    
-                            while(input != 0)
-                            {
-                                ui.AutoUIWriteLine();
-                                userInput = Console.ReadLine();
-                                if (int.TryParse(userInput, out input))
-                                {   
-                                    switch(input)
-                                    {
-                                        case 1: //Auto Ingot
-                                            await auto.AutoIngotGathering(characterName ?? "", token);
-                                            break;
-                                        case 2: //Auto Attack
-                                            await auto.AutoAttack(characterName ?? "", token);
-                                            break;
-                                        case 3: // Auto Plank
-                                            await auto.AutoPlankGathering(characterName ?? "", token);
-                                            break;
-                                        case 4: // Auto Task
-                                            await auto.AutoBasicItemTask(characterName ?? "", token);
-                                            break;
-                                        case 0: // Exit
+                case "Auto Attack":
+                    AnsiConsole.WriteLine($"You selected {uiChoice}");
+                    break;
 
-                                            break;
-                                    }
-                                    
-                                }
-                            }
-                            input = 9;
-                            break;
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Invalid input. Please enter a valid number.");
-                }
-            }
+                case "Auto Plank":
+                    AnsiConsole.WriteLine($"You selected {uiChoice}");
+                    break;
+                
+                case "Auto Task":
+                    AnsiConsole.WriteLine($"You selected {uiChoice}");
+                    break;
 
-            Console.WriteLine("Exiting App");
+                case "Exit":
+                    AnsiConsole.WriteLine($"You selected {uiChoice}");
+                    break;
+            }   
         }
-
     }
 }
