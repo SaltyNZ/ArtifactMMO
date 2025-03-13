@@ -12,36 +12,6 @@ namespace ArtifactMMO
 {
     public class UI
     {
-
-        private string[] validEquipment = {"weapon","shield","helmet","body_armor","leg_armor","boots","ring1","ring2","amulet","artifact1","artifact2","artifact3","utility1","utility2","bag","rune"};
-
-        public void MainUIWriteLine()
-        {
-            Console.WriteLine("------------------------------------------------------------");
-            Console.WriteLine("Select a Function:");
-            Console.WriteLine("1. Character Info");
-            Console.WriteLine("2. Move");
-            Console.WriteLine("3. Attack Current Square");
-            Console.WriteLine("4. Rest");
-            Console.WriteLine("5. Gathering");
-            Console.WriteLine("6. Unequip");
-            Console.WriteLine("7. Equip");
-            Console.WriteLine("8. Crafting");
-            Console.WriteLine("9. Automatic Function Menu");
-            Console.WriteLine("0. Exit");
-        }
-
-        public void AutoUIWriteLine()
-        {
-            Console.WriteLine("------------------------------------------------------------");
-            Console.WriteLine("Select a Automatic Function:");
-            Console.WriteLine("1. Auto Ingot");
-            Console.WriteLine("2. Auto Attack");
-            Console.WriteLine("3. Auto Plank");
-            Console.WriteLine("4. Auto Task");
-            Console.WriteLine("0. Go Back");
-        }
-
         public void CharacterInfoUI(characterInfoResponse character)
         {
             var characterTable = new Table();
@@ -85,21 +55,6 @@ namespace ArtifactMMO
             }
                 
         }
-
-        public bool isValidEquipment(string equipment)
-        {
-            foreach(string i in validEquipment)
-            {
-                if(equipment.ToLower() == i) return true;  
-            }
-            return false;
-        }
-
-        public bool isValidCraft(string craft)
-        {
-            return true;
-        }
-
 
     }
 }
