@@ -50,8 +50,8 @@ namespace ArtifactMMO
                     .AddChoices(new[] {
                         "Character Info","Auto Ingot",
                         "Auto Attack","Auto Plank",
-                        "Auto Task","Exit"
-                        ,"ManualQ"
+                        "Exit"
+                        //,"ManualQ"  //Comment Out for Working Build.
                 }));
 
             switch (uiChoice)

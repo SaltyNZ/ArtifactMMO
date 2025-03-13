@@ -84,7 +84,6 @@ namespace ArtifactMMO
                 );
             }
             transaction.Commit();
-
             Console.WriteLine($"Stored {locations.Count} locations in the database.");
         }
     }
