@@ -213,7 +213,7 @@ namespace ArtifactMMO
                 //PRE-LOOP CHECKS
 
                 //if not full HP rest
-                if(charinfo.Hp != charinfo.MaxHp) {await api.RestAsync(characterName, token);}
+                if(charinfo.Hp != charinfo.MaxHp) {await api.PerformActionAsync<RestResponse>(characterName, token, "rest", new{}, "Resting:");}
 
                 while (true)
                 {
@@ -241,17 +241,8 @@ namespace ArtifactMMO
 
                     while(totalItems < maxItems)
                     {
-                        attackInfo = await api.PerformActionAsync<AttackResponse>(characterName, token, "attack", new{}, "Attacking Mob");
+                        attackInfo = await api.PerformActionAsync<AttackResponse>(characterName, token, "fight", new{}, "Attacking Mob:");
 
-                        if(attackInfo?.Character != null)
-                        {
-                            healthLeft = (double)attackInfo.Character.Hp/(double)attackInfo.Character.MaxHp;
-                            if(healthLeft < healthLeftPercent)
-                            {
-                                Console.WriteLine($"Resting because the hp is at {healthLeft*100}% of Max HP");
-                                await api.RestAsync(characterName, token);
-                            }
-                        }
                         if(attackInfo?.Fight?.Drops != null)
                         {
                             foreach(var drop in attackInfo.Fight.Drops)
@@ -259,10 +250,21 @@ namespace ArtifactMMO
                                 if(drop.Quantity > 0)
                                 {
                                     totalItems += drop.Quantity;
-                                    Console.WriteLine($"The total amount of items is {totalItems}");
+                                    Console.WriteLine($"There is {drop.Quantity} {drop.Code}");
+                                    Console.WriteLine($"The total amount of items is now {totalItems}");
                                 }
                             }
-                        }                       
+                        }
+                        if(attackInfo?.Character != null)
+                        {
+                            healthLeft = (double)attackInfo.Character.Hp/(double)attackInfo.Character.MaxHp;
+                            if(healthLeft < healthLeftPercent)
+                            {
+                                Console.WriteLine($"Resting because the hp is at {healthLeft*100}% of Max HP");
+                                await api.PerformActionAsync<RestResponse>(characterName, token, "rest", new{}, "Resting:");
+                            }
+                        }
+                                             
                     }
 
                     
@@ -295,9 +297,8 @@ namespace ArtifactMMO
 
                 Console.WriteLine(totalItems);
                 Console.WriteLine(totalTaskItems);
-            }
-            
-    }
+            } 
+        }
 
         public async Task AutoPlankGathering(string characterName, string token)
         {
@@ -348,7 +349,7 @@ namespace ArtifactMMO
                 {
                     while(totalItems < maxItems)
                     {
-                        gatheringInfo = await api.GatheringAsync(characterName, token);
+                        gatheringInfo = await api.PerformActionAsync<gatheringResponse>(characterName, token, "gathering", new{}, $"Gathering {wood}:");
 
                         if(gatheringInfo?.Detail?.Items != null)
                         {
@@ -370,18 +371,18 @@ namespace ArtifactMMO
                     }
 
                     //Crafting
-                    await api.MoveCharacterAsync(characterName, token, -2, -3);
+                    await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new {x = -2, y = -3}, "Moving to Crafting");
 
                     qty = totalWood/10;
 
                     if(qty > 0)
                     {
-                        await api.CraftAsync(characterName, token, plank, qty);
+                        await api.PerformActionAsync<craftResponse>(characterName, token, "crafting", new {code = plank, quantity = qty}, $"Crafting {qty} - {plank}");
                     }
 
                     Console.WriteLine("Moving to the bank");
-                    moveInfo = await api.MoveCharacterAsync(characterName, token, 4, 1);
-                    Console.WriteLine("Moving Items to bank");
+                    moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move",new {x=4, y=1}, "Moving to the Bank");
+                    Console.WriteLine("Depositing Items into the bank");
                     totalItems = 0;
                     totalWood = 0;
 
@@ -391,7 +392,7 @@ namespace ArtifactMMO
                         {
                             if(item.Quantity > 0 && item.Code != wood)
                             {
-                                await api.BankItemsAsync(characterName, token, item.Code, item.Quantity);
+                                await api.PerformActionAsync<bankItemResponse>(characterName, token, "bank/deposit", new {code = item.Code, quantity = item.Quantity}, $"Banking {item.Code}:");
                             } 
                             else if (item.Quantity > 0 && item.Code == wood)
                             {
@@ -402,7 +403,7 @@ namespace ArtifactMMO
                         }
                     }
 
-                    await api.MoveCharacterAsync(characterName, token, gatherX, gatherY);
+                    await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new {x = gatherX, y = gatherY}, $"Moving to {wood}");
 
                 }
             }

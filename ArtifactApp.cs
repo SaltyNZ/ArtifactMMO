@@ -51,6 +51,7 @@ namespace ArtifactMMO
                         "Character Info","Auto Ingot",
                         "Auto Attack","Auto Plank",
                         "Auto Task","Exit"
+                        ,"ManualQ"
                 }));
 
             switch (uiChoice)
@@ -65,10 +66,12 @@ namespace ArtifactMMO
                     break;
 
                 case "Auto Attack":
+                    await auto.AutoAttack(characterName, token);
                     AnsiConsole.WriteLine($"You selected {uiChoice}");
                     break;
 
                 case "Auto Plank":
+                    await auto.AutoPlankGathering(characterName, token);
                     AnsiConsole.WriteLine($"You selected {uiChoice}");
                     break;
                 
@@ -78,6 +81,10 @@ namespace ArtifactMMO
 
                 case "Exit":
                     AnsiConsole.WriteLine($"You selected {uiChoice}");
+                    break;
+                
+                case "ManualQ":
+                    await api.PerformActionAsync<AttackResponse>(characterName, token, "fight", new{}, "Attacking Mob:");
                     break;
             }   
         }
