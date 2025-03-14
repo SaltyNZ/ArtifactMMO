@@ -23,40 +23,52 @@ namespace ArtifactMMO
         private async Task GetLocations()
         {
             string apiUrl = "https://api.artifactsmmo.com/maps";
+            int page = 1;
+            int totalPages = 1;
+            List<LocationData> allLocations = new();
 
             using HttpClient client = new();
-            HttpResponseMessage response = await client.GetAsync(apiUrl);
 
-            if(!response.IsSuccessStatusCode)
+            do
             {
-                Console.WriteLine("Failed to get Data from API");
-                return;
+                HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                if(!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Failed to get Data from API");
+                    break;
+                }
+
+                string json = await response.Content.ReadAsStringAsync();
+                MapApiResponse? apiResponse = JsonSerializer.Deserialize<MapApiResponse>(json);
+
+                if(apiResponse is null || apiResponse.Data.Count == 0)
+                {
+                    Console.WriteLine($"No Data Returned on Page {page}");
+                    break;
+                }
+
+                totalPages = apiResponse.Pages;
+
+                List<LocationData> locations = apiResponse.Data.Select(loc => new LocationData
+                {
+                    Name = loc.Name,
+                    X = loc.X,
+                    Y = loc.Y,
+                    Type = loc.Content.Type,
+                    Code = loc.Content.Code
+                }).ToList();
+
+            } while(page <= totalPages);
+
+            if(allLocations.Any())
+            {
+                await SaveLocationsToDatabase(allLocations).ConfigureAwait(false);
             }
-
-            string json = await response.Content.ReadAsStringAsync();
-            MapApiResponse? apiResponse = JsonSerializer.Deserialize<MapApiResponse>(json);
-
-            if(apiResponse is null || apiResponse.Data.Count == 0)
+            else
             {
-                Console.WriteLine("No Data Returned");
-                return;
+                Console.WriteLine("No Loaction Found.");
             }
-
-            List<LocationData> locations = apiResponse.Data.Select(loc => new LocationData
-            {
-                Name = loc.Name,
-                X = loc.X,
-                Y = loc.Y,
-                Type = loc.Content.Type,
-                Code = loc.Content.Code
-            }).ToList();
-
-            if(locations is not null)
-            {
-
-            }
-
-
 
         }
 
@@ -101,6 +113,10 @@ namespace ArtifactMMO
     public class MapApiResponse
     {
         public List<ApiLocation> Data { get; set; } = new();
+        public int Total { get; set; }  // Total number of map tiles available
+        public int Page { get; set; }   // Current page number
+        public int Size { get; set; }   // Number of items per page
+        public int Pages { get; set; }  // Total pages available
     }
 
     public class ApiLocation
@@ -109,6 +125,7 @@ namespace ArtifactMMO
         public int X { get; set; }
         public int Y { get; set; }
         public ApiContent Content { get; set; } = new();
+        public int Pages { get; set; }
     }
 
     public class ApiContent
