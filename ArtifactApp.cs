@@ -33,6 +33,7 @@ namespace ArtifactMMO
             ArtifactApiService api = new ArtifactApiService();
             UI ui = new UI();
             AutomationScripts auto = new AutomationScripts();
+            SQLiteScript sql = new SQLiteScript();
 
 
             // -------------------
@@ -84,7 +85,8 @@ namespace ArtifactMMO
                     break;
                 
                 case "ManualQ":
-                    await api.PerformActionAsync<AttackResponse>(characterName, token, "fight", new{}, "Attacking Mob:");
+                    //await api.PerformActionAsync<AttackResponse>(characterName, token, "fight", new{}, "Attacking Mob:");
+                    await sql.SQLiteUpdate();
                     break;
             }   
         }
