@@ -42,7 +42,7 @@ namespace ArtifactMMO
                 }
 
                 string json = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"API Response (Raw JSON): {json}");
+                //Console.WriteLine($"API Response (Raw JSON): {json}"); //Debuging line
                 MapApiResponse? apiResponse = JsonSerializer.Deserialize<MapApiResponse>(json);
 
                 if(apiResponse is null || apiResponse.Data.Count == 0)
@@ -96,6 +96,10 @@ namespace ArtifactMMO
                 CODE TEXT,
                 UNIQUE(X, Y) -- Prevent duplicate tiles
             )");
+            
+            //Clear Table
+            await conn.ExecuteAsync("DELETE FROM MAP;");
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='MAP';");
 
             using var transaction = await conn.BeginTransactionAsync();
 
