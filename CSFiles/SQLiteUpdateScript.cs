@@ -18,8 +18,20 @@ namespace ArtifactMMO
         public async Task SQLiteUpdate()
         {
             await GetLocations();
+
             return;
         }
+
+
+
+
+
+
+
+
+
+
+        #region Get Map Data
 
         private async Task GetLocations()
         {
@@ -123,6 +135,19 @@ namespace ArtifactMMO
                 Console.WriteLine($"Error saving locations: {ex.Message}");
             }
         }
+
+        #endregion
+
+
+
+
+
+        #region Get Resource Info
+        private async Task GetResourceInfo()
+        {
+
+        }
+        #endregion
     }
 
     //DATA CLASSES
@@ -141,16 +166,16 @@ namespace ArtifactMMO
         public List<ApiLocation> Data { get; set; } = new();
         
         [JsonPropertyName("total")]
-        public int Total { get; set; }  // Total number of map tiles available
+        public int Total { get; set; }
 
         [JsonPropertyName("page")]
-        public int Page { get; set; }   // Current page number
+        public int Page { get; set; }
 
         [JsonPropertyName("size")]
-        public int Size { get; set; }   // Number of items per page
+        public int Size { get; set; }
 
         [JsonPropertyName("pages")]
-        public int Pages { get; set; }  // Total pages available
+        public int Pages { get; set; }
     }
 
     public class ApiLocation
@@ -177,4 +202,55 @@ namespace ArtifactMMO
         public string? Code { get; set; } = string.Empty;
     }
 
+    public class ResourceAPIResponse
+    {
+        [JsonPropertyName("data")]
+        public List<ApiResource> Data { get; set; } = new();
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("size")]
+        public int Size { get; set; }
+
+        [JsonPropertyName("pages")]
+        public int Pages { get; set; }
+    }
+
+    public class ApiResource
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
+
+        [JsonPropertyName("skill")]
+        public string? Skill { get; set; }
+        
+        [JsonPropertyName("level")]
+        public int? Level { get; set; }
+
+        [JsonPropertyName("drops")]
+        public ResourceDrops? Drops { get; set; }
+
+    }
+
+    public class ResourceDrops
+    {
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
+        
+        [JsonPropertyName("rate")]
+        public int? Rate { get; set; }
+
+        [JsonPropertyName("min_quantity")]
+        public int? Min_QTY { get; set; }
+
+        [JsonPropertyName("max_quantity")]
+        public int? Max_QTY { get; set; }
+    }
 }
