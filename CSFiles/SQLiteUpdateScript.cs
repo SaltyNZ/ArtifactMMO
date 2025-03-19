@@ -145,19 +145,126 @@ namespace ArtifactMMO
         #region Get Resource Info
         private async Task GetResourceInfo()
         {
+            string apiUrlTemplate = "https://api.artifactsmmo.com/resources?page=";
+            int page = 1;
+            int totalPages = 1;
+            List<ResourceHDRData> allResourceHDR = new();
+            List<ResourceLineData> allResourceLine = new();
 
+            using HttpClient client = new();
+
+            do
+            {
+                string apiUrl = apiUrlTemplate + page;
+                HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                if(!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Failed to get Data from API");
+                    break;
+                }
+
+                string json = await response.Content.ReadAsStringAsync();
+                //Console.WriteLine($"API Response (Raw JSON): {json}"); //Debuging line
+                ResourceAPIResponse? apiResponse = JsonSerializer.Deserialize<ResourceAPIResponse>(json);
+
+                if(apiResponse is null || apiResponse.Data.Count == 0)
+                {
+                    Console.WriteLine($"No Data Returned on Page {page}, Data Count = {apiResponse?.Data.Count}, APIURL = {apiUrl}");
+                    break;
+                }
+
+                totalPages = apiResponse.Pages;
+
+                List<ResourceHDRData> resourceHDR = apiResponse.Data.Select(HDR => new ResourceHDRData
+                {
+                    
+                    
+                }).ToList();
+
+                allResourceHDR.AddRange(resourceHDR);
+                page++;
+
+            } while(page <= totalPages);
+
+            if(allResourceHDR.Any())
+            {
+                await SaveResourceToDatabase(allResourceHDR).ConfigureAwait(false);
+            }
+            else
+            {
+                Console.WriteLine("No Loaction Found.");
+            }
         }
+
+        private async Task SaveResourceToDatabase(List<ResourceHDRData> resourceHDR)
+        {
+            string dbPath = "ArtifactDB.db";
+            string connectionString = $"Data Source={dbPath};Version=3;";
+
+            using var conn = new SQLiteConnection(connectionString);
+
+            await conn.OpenAsync();
+
+            await conn.ExecuteAsync(@"CREATE TABLE IF NOT EXISTS RESOURCE_HDR (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                NAME TEXT,
+                CODE TEXT,
+                SKILL TEXT,
+                LEVEL INTEGER
+            )");
+            
+            //Clear Table
+            await conn.ExecuteAsync("DELETE FROM RESOURCE_HDR;");
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_HDR';");
+
+            await conn.ExecuteAsync(@"CREATE TABLE IF NOT EXISTS RESOURCE_LINES (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                HDR_CODE TEXT,
+                CODE TEXT,
+                RATE INTEGER,
+                MIN_QTY INTEGER,
+                MAX_QTY INTEGER
+            )");
+            
+            //Clear Table
+            await conn.ExecuteAsync("DELETE FROM RESOURCE_LINES;");
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_LINES';");
+
+            using var transaction = await conn.BeginTransactionAsync();
+
+            try
+            {
+                foreach (var resource in resourceHDR)
+                {
+                    await conn.ExecuteAsync(
+                        "INSERT OR REPLACE INTO MAP (NAME, X, Y, TYPE, CODE) VALUES (@Name, @X, @Y, @Type, @Code)",
+                        new { resource.Name, resource.Code },
+                        transaction
+                    );
+                }
+
+                await transaction.CommitAsync();
+                Console.WriteLine($"Stored {resourceHDR.Count} locations in the database.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"Error saving locations: {ex.Message}");
+            }
+        }
+
         #endregion
     }
 
     //DATA CLASSES
     public class LocationData
     {
-        public string? Name { get; set; } // "name"
-        public int X { get; set; }        // "x"
-        public int Y { get; set; }        // "y"
-        public string Type { get; set; } = string.Empty; // "content.type"
-        public string Code { get; set; } = string.Empty; // "content.code"
+        public string? Name { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
     }
 
     public class MapApiResponse
@@ -200,6 +307,24 @@ namespace ArtifactMMO
 
         [JsonPropertyName("code")]
         public string? Code { get; set; } = string.Empty;
+    }
+
+    public class ResourceHDRData
+    {
+        public string? Name { get; set; }
+        public string? Code { get; set; }
+        public string? Skill { get; set; }
+        public int? Level { get; set; }
+
+    }
+
+    public class ResourceLineData
+    {
+        public string? Name { get; set; }
+        public string? Code { get; set; }
+        public string? Skill { get; set; }
+        public int? Level { get; set; }
+
     }
 
     public class ResourceAPIResponse
