@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Spectre.Console;
 using Spectre.Console.Json;
 using Microsoft.Data.Sqlite;
+using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Data.SQLite;
 using Dapper;
@@ -17,104 +18,364 @@ namespace ArtifactMMO
         public async Task SQLiteUpdate()
         {
             await GetLocations();
+
             return;
         }
 
+
+
+
+
+
+
+
+
+
+        #region Get Map Data
+
         private async Task GetLocations()
         {
-            string apiUrl = "https://api.artifactsmmo.com/maps";
+            string apiUrlTemplate = "https://api.artifactsmmo.com/maps?page=";
+            int page = 1;
+            int totalPages = 1;
+            List<LocationData> allLocations = new();
 
             using HttpClient client = new();
-            HttpResponseMessage response = await client.GetAsync(apiUrl);
 
-            if(!response.IsSuccessStatusCode)
+            do
             {
-                Console.WriteLine("Failed to get Data from API");
-                return;
+                string apiUrl = apiUrlTemplate + page;
+                HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                if(!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Failed to get Data from API");
+                    break;
+                }
+
+                string json = await response.Content.ReadAsStringAsync();
+                //Console.WriteLine($"API Response (Raw JSON): {json}"); //Debuging line
+                MapApiResponse? apiResponse = JsonSerializer.Deserialize<MapApiResponse>(json);
+
+                if(apiResponse is null || apiResponse.Data.Count == 0)
+                {
+                    Console.WriteLine($"No Data Returned on Page {page}, Data Count = {apiResponse?.Data.Count}, APIURL = {apiUrl}");
+                    break;
+                }
+
+                totalPages = apiResponse.Pages;
+
+                List<LocationData> locations = apiResponse.Data.Select(loc => new LocationData
+                {
+                    Name = loc.Name,
+                    X = loc.X,
+                    Y = loc.Y,
+                    Type = loc.Content?.Type ?? "none",
+                    Code = loc.Content?.Code ?? "none"
+                }).ToList();
+
+                allLocations.AddRange(locations);
+                page++;
+
+            } while(page <= totalPages);
+
+            if(allLocations.Any())
+            {
+                await SaveLocationsToDatabase(allLocations).ConfigureAwait(false);
             }
-
-            string json = await response.Content.ReadAsStringAsync();
-            MapApiResponse? apiResponse = JsonSerializer.Deserialize<MapApiResponse>(json);
-
-            if(apiResponse is null || apiResponse.Data.Count == 0)
+            else
             {
-                Console.WriteLine("No Data Returned");
-                return;
+                Console.WriteLine("No Loaction Found.");
             }
-
-            List<LocationData> locations = apiResponse.Data.Select(loc => new LocationData
-            {
-                Name = loc.Name,
-                X = loc.X,
-                Y = loc.Y,
-                Type = loc.Content.Type,
-                Code = loc.Content.Code
-            }).ToList();
-
-            if(locations is not null)
-            {
-
-            }
-
-
 
         }
 
         private async Task SaveLocationsToDatabase(List<LocationData> locations)
         {
             string dbPath = "ArtifactDB.db";
+            string connectionString = $"Data Source={dbPath};Version=3;";
 
-            using SQLiteConnection conn = new(dbPath);
-                conn.Execute(@"CREATE TABLE IF NOT EXISTS MAP (
-                    ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                    NAME TEXT,
-                    X INTEGER NOT NULL,
-                    Y INTEGER NOT NULL,
-                    TYPE TEXT,
-                    CODE TEXT,
-                    UNIQUE(X, Y) -- Prevent duplicate tiles
-                )");
+            using var conn = new SQLiteConnection(connectionString);
 
-            using var transaction = conn.BeginTransaction();
-            foreach (var location in locations)
+            await conn.OpenAsync();
+
+            await conn.ExecuteAsync(@"CREATE TABLE IF NOT EXISTS MAP (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                NAME TEXT,
+                X INTEGER NOT NULL,
+                Y INTEGER NOT NULL,
+                TYPE TEXT,
+                CODE TEXT,
+                UNIQUE(X, Y) -- Prevent duplicate tiles
+            )");
+            
+            //Clear Table
+            await conn.ExecuteAsync("DELETE FROM MAP;");
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='MAP';");
+
+            using var transaction = await conn.BeginTransactionAsync();
+
+            try
             {
-                conn.Execute(
-                    "INSERT OR REPLACE INTO MAP (NAME, X, Y, TYPE, CODE) VALUES (@name, @x, @y, @type, @code)", 
-                    new { location.Name, location.X, location.Y, location.Type, location.Code }
-                );
+                foreach (var location in locations)
+                {
+                    await conn.ExecuteAsync(
+                        "INSERT OR REPLACE INTO MAP (NAME, X, Y, TYPE, CODE) VALUES (@Name, @X, @Y, @Type, @Code)",
+                        new { location.Name, location.X, location.Y, location.Type, location.Code },
+                        transaction
+                    );
+                }
+
+                await transaction.CommitAsync();
+                Console.WriteLine($"Stored {locations.Count} locations in the database.");
             }
-            transaction.Commit();
-            Console.WriteLine($"Stored {locations.Count} locations in the database.");
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"Error saving locations: {ex.Message}");
+            }
         }
+
+        #endregion
+
+
+
+
+
+        #region Get Resource Info
+        private async Task GetResourceInfo()
+        {
+            string apiUrlTemplate = "https://api.artifactsmmo.com/resources?page=";
+            int page = 1;
+            int totalPages = 1;
+            List<ResourceHDRData> allResourceHDR = new();
+            List<ResourceLineData> allResourceLine = new();
+
+            using HttpClient client = new();
+
+            do
+            {
+                string apiUrl = apiUrlTemplate + page;
+                HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                if(!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Failed to get Data from API");
+                    break;
+                }
+
+                string json = await response.Content.ReadAsStringAsync();
+                //Console.WriteLine($"API Response (Raw JSON): {json}"); //Debuging line
+                ResourceAPIResponse? apiResponse = JsonSerializer.Deserialize<ResourceAPIResponse>(json);
+
+                if(apiResponse is null || apiResponse.Data.Count == 0)
+                {
+                    Console.WriteLine($"No Data Returned on Page {page}, Data Count = {apiResponse?.Data.Count}, APIURL = {apiUrl}");
+                    break;
+                }
+
+                totalPages = apiResponse.Pages;
+
+                List<ResourceHDRData> resourceHDR = apiResponse.Data.Select(HDR => new ResourceHDRData
+                {
+                    
+                    
+                }).ToList();
+
+                allResourceHDR.AddRange(resourceHDR);
+                page++;
+
+            } while(page <= totalPages);
+
+            if(allResourceHDR.Any())
+            {
+                await SaveResourceToDatabase(allResourceHDR).ConfigureAwait(false);
+            }
+            else
+            {
+                Console.WriteLine("No Loaction Found.");
+            }
+        }
+
+        private async Task SaveResourceToDatabase(List<ResourceHDRData> resourceHDR)
+        {
+            string dbPath = "ArtifactDB.db";
+            string connectionString = $"Data Source={dbPath};Version=3;";
+
+            using var conn = new SQLiteConnection(connectionString);
+
+            await conn.OpenAsync();
+
+            await conn.ExecuteAsync(@"CREATE TABLE IF NOT EXISTS RESOURCE_HDR (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                NAME TEXT,
+                CODE TEXT,
+                SKILL TEXT,
+                LEVEL INTEGER
+            )");
+            
+            //Clear Table
+            await conn.ExecuteAsync("DELETE FROM RESOURCE_HDR;");
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_HDR';");
+
+            await conn.ExecuteAsync(@"CREATE TABLE IF NOT EXISTS RESOURCE_LINES (
+                ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                HDR_CODE TEXT,
+                CODE TEXT,
+                RATE INTEGER,
+                MIN_QTY INTEGER,
+                MAX_QTY INTEGER
+            )");
+            
+            //Clear Table
+            await conn.ExecuteAsync("DELETE FROM RESOURCE_LINES;");
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_LINES';");
+
+            using var transaction = await conn.BeginTransactionAsync();
+
+            try
+            {
+                foreach (var resource in resourceHDR)
+                {
+                    await conn.ExecuteAsync(
+                        "INSERT OR REPLACE INTO MAP (NAME, X, Y, TYPE, CODE) VALUES (@Name, @X, @Y, @Type, @Code)",
+                        new { resource.Name, resource.Code },
+                        transaction
+                    );
+                }
+
+                await transaction.CommitAsync();
+                Console.WriteLine($"Stored {resourceHDR.Count} locations in the database.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"Error saving locations: {ex.Message}");
+            }
+        }
+
+        #endregion
     }
 
     //DATA CLASSES
     public class LocationData
     {
-        public string? Name { get; set; } // "name"
-        public int X { get; set; }        // "x"
-        public int Y { get; set; }        // "y"
-        public string Type { get; set; } = string.Empty; // "content.type"
-        public string Code { get; set; } = string.Empty; // "content.code"
-    }
-
-    public class MapApiResponse
-    {
-        public List<ApiLocation> Data { get; set; } = new();
-    }
-
-    public class ApiLocation
-    {
         public string? Name { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
-        public ApiContent Content { get; set; } = new();
-    }
-
-    public class ApiContent
-    {
         public string Type { get; set; } = string.Empty;
         public string Code { get; set; } = string.Empty;
     }
 
+    public class MapApiResponse
+    {
+        [JsonPropertyName("data")]
+        public List<ApiLocation> Data { get; set; } = new();
+        
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("size")]
+        public int Size { get; set; }
+
+        [JsonPropertyName("pages")]
+        public int Pages { get; set; }
+    }
+
+    public class ApiLocation
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("x")]
+        public int X { get; set; }
+
+        [JsonPropertyName("y")]
+        public int Y { get; set; }
+
+        [JsonPropertyName("content")]
+        public ApiContent? Content { get; set; }
+    }
+
+    public class ApiContent
+    {
+        [JsonPropertyName("type")]
+        public string? Type { get; set; } = string.Empty;
+
+        [JsonPropertyName("code")]
+        public string? Code { get; set; } = string.Empty;
+    }
+
+    public class ResourceHDRData
+    {
+        public string? Name { get; set; }
+        public string? Code { get; set; }
+        public string? Skill { get; set; }
+        public int? Level { get; set; }
+
+    }
+
+    public class ResourceLineData
+    {
+        public string? Name { get; set; }
+        public string? Code { get; set; }
+        public string? Skill { get; set; }
+        public int? Level { get; set; }
+
+    }
+
+    public class ResourceAPIResponse
+    {
+        [JsonPropertyName("data")]
+        public List<ApiResource> Data { get; set; } = new();
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("size")]
+        public int Size { get; set; }
+
+        [JsonPropertyName("pages")]
+        public int Pages { get; set; }
+    }
+
+    public class ApiResource
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
+
+        [JsonPropertyName("skill")]
+        public string? Skill { get; set; }
+        
+        [JsonPropertyName("level")]
+        public int? Level { get; set; }
+
+        [JsonPropertyName("drops")]
+        public ResourceDrops? Drops { get; set; }
+
+    }
+
+    public class ResourceDrops
+    {
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
+        
+        [JsonPropertyName("rate")]
+        public int? Rate { get; set; }
+
+        [JsonPropertyName("min_quantity")]
+        public int? Min_QTY { get; set; }
+
+        [JsonPropertyName("max_quantity")]
+        public int? Max_QTY { get; set; }
+    }
 }
