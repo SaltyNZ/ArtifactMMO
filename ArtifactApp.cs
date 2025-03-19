@@ -52,7 +52,7 @@ namespace ArtifactMMO
                         "Character Info","Auto Ingot",
                         "Auto Attack","Auto Plank",
                         "Exit"
-                        ,"ManualQ"  //Comment Out for Working Build.
+                        //,"ManualQ"  //Comment Out for Working Build.
                 }));
 
             switch (uiChoice)
