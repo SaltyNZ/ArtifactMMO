@@ -18,6 +18,7 @@ namespace ArtifactMMO
         public async Task SQLiteUpdate()
         {
             await GetLocations();
+            await GetResourceInfo();
 
             return;
         }
@@ -128,11 +129,13 @@ namespace ArtifactMMO
 
                 await transaction.CommitAsync();
                 Console.WriteLine($"Stored {locations.Count} locations in the database.");
+                await conn.CloseAsync();            
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 Console.WriteLine($"Error saving locations: {ex.Message}");
+                await conn.CloseAsync();
             }
         }
 
@@ -178,18 +181,39 @@ namespace ArtifactMMO
 
                 List<ResourceHDRData> resourceHDR = apiResponse.Data.Select(HDR => new ResourceHDRData
                 {
-                    
-                    
+                    Name = HDR.Name,
+                    Code = HDR.Code,
+                    Skill = HDR.Skill,
+                    Level = HDR.Level
                 }).ToList();
 
                 allResourceHDR.AddRange(resourceHDR);
+
+                foreach(var resource in apiResponse.Data)
+                {
+                    if (resource.Drops != null)
+                    {
+                        foreach (var drop in resource.Drops)
+                        {
+                            allResourceLine.Add(new ResourceLineData
+                            {
+                                HDR_Code = resource.Code,
+                                Code = drop.Code,
+                                Rate = drop.Rate,
+                                Min_Qty = drop.Min_QTY,
+                                Max_Qty = drop.Max_QTY
+                            });
+                        }
+                    }
+                }
+                
                 page++;
 
             } while(page <= totalPages);
 
             if(allResourceHDR.Any())
             {
-                await SaveResourceToDatabase(allResourceHDR).ConfigureAwait(false);
+                await SaveResourceToDatabase(allResourceHDR, allResourceLine).ConfigureAwait(false);
             }
             else
             {
@@ -197,61 +221,80 @@ namespace ArtifactMMO
             }
         }
 
-        private async Task SaveResourceToDatabase(List<ResourceHDRData> resourceHDR)
+        private async Task SaveResourceToDatabase(List<ResourceHDRData> resourceHDR, List<ResourceLineData> resourceLine)
         {
             string dbPath = "ArtifactDB.db";
             string connectionString = $"Data Source={dbPath};Version=3;";
 
             using var conn = new SQLiteConnection(connectionString);
 
-            await conn.OpenAsync();
+            await conn.OpenAsync().ConfigureAwait(false);
 
-            await conn.ExecuteAsync(@"CREATE TABLE IF NOT EXISTS RESOURCE_HDR (
-                ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                NAME TEXT,
-                CODE TEXT,
-                SKILL TEXT,
-                LEVEL INTEGER
-            )");
+            await conn.ExecuteAsync(@"
+                CREATE TABLE IF NOT EXISTS RESOURCE_HDR (
+                    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    NAME TEXT,
+                    CODE TEXT UNIQUE, -- Ensures unique resource codes
+                    SKILL TEXT,
+                    LEVEL INTEGER
+                );
+                CREATE TABLE IF NOT EXISTS RESOURCE_LINES (
+                    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    HDR_CODE TEXT,
+                    CODE TEXT,
+                    RATE INTEGER,
+                    MIN_QTY INTEGER,
+                    MAX_QTY INTEGER
+                );
+            ").ConfigureAwait(false);
             
             //Clear Table
-            await conn.ExecuteAsync("DELETE FROM RESOURCE_HDR;");
-            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_HDR';");
+            await conn.ExecuteAsync("DELETE FROM RESOURCE_HDR;").ConfigureAwait(false);
+            await conn.ExecuteAsync("DELETE FROM RESOURCE_LINES;").ConfigureAwait(false);
 
-            await conn.ExecuteAsync(@"CREATE TABLE IF NOT EXISTS RESOURCE_LINES (
-                ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                HDR_CODE TEXT,
-                CODE TEXT,
-                RATE INTEGER,
-                MIN_QTY INTEGER,
-                MAX_QTY INTEGER
-            )");
-            
-            //Clear Table
-            await conn.ExecuteAsync("DELETE FROM RESOURCE_LINES;");
-            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_LINES';");
-
-            using var transaction = await conn.BeginTransactionAsync();
+            using var transaction = await conn.BeginTransactionAsync().ConfigureAwait(false);
 
             try
             {
-                foreach (var resource in resourceHDR)
+                if (resourceHDR.Count > 0)
                 {
-                    await conn.ExecuteAsync(
-                        "INSERT OR REPLACE INTO MAP (NAME, X, Y, TYPE, CODE) VALUES (@Name, @X, @Y, @Type, @Code)",
-                        new { resource.Name, resource.Code },
-                        transaction
-                    );
+                    foreach(var hdr in resourceHDR)
+                    {
+                        await conn.ExecuteAsync(
+                            "INSERT INTO RESOURCE_HDR (NAME, CODE, SKILL, LEVEL) VALUES (@Name, @Code, @Skill, @Level);",
+                            new {hdr.Name, hdr.Code, hdr.Skill, hdr.Level},
+                            transaction
+                        ).ConfigureAwait(false);
+                    }
                 }
 
-                await transaction.CommitAsync();
-                Console.WriteLine($"Stored {resourceHDR.Count} locations in the database.");
+
+                if (resourceLine.Count > 0)
+                {
+                    foreach(var line in resourceLine)
+                    {
+                        await conn.ExecuteAsync(
+                        "INSERT INTO RESOURCE_LINES (HDR_CODE, CODE, RATE, MIN_QTY, MAX_QTY) VALUES (@HDR_Code, @Code, @Rate, @Min_Qty, @Max_Qty);",
+                        new {line.HDR_Code, line.Code, line.Rate, line.Min_Qty, line.Max_Qty},
+                        transaction
+                        ).ConfigureAwait(false);
+                    }
+                    
+                }
+
+                await transaction.CommitAsync().ConfigureAwait(false);
+                Console.WriteLine($"Stored {resourceHDR.Count} resources headers and {resourceLine.Count} resource lines in the database.");
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                await transaction.RollbackAsync().ConfigureAwait(false);
                 Console.WriteLine($"Error saving locations: {ex.Message}");
             }
+            finally
+            {
+                await conn.CloseAsync().ConfigureAwait(false);
+            }
+
         }
 
         #endregion
@@ -320,10 +363,11 @@ namespace ArtifactMMO
 
     public class ResourceLineData
     {
-        public string? Name { get; set; }
+        public string? HDR_Code { get; set; }
         public string? Code { get; set; }
-        public string? Skill { get; set; }
-        public int? Level { get; set; }
+        public int? Rate { get; set; }
+        public int? Min_Qty { get; set; }
+        public int? Max_Qty { get; set; }
 
     }
 
@@ -360,7 +404,7 @@ namespace ArtifactMMO
         public int? Level { get; set; }
 
         [JsonPropertyName("drops")]
-        public ResourceDrops? Drops { get; set; }
+        public List<ResourceDrops>? Drops { get; set; }
 
     }
 
