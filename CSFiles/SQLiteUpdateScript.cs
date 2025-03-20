@@ -18,6 +18,7 @@ namespace ArtifactMMO
         public async Task SQLiteUpdate()
         {
             await GetLocations();
+            await GetResourceInfo();
 
             return;
         }
@@ -199,8 +200,8 @@ namespace ArtifactMMO
                                 HDR_Code = resource.Code,
                                 Code = drop.Code,
                                 Rate = drop.Rate,
-                                MIN_Qty = drop.Min_QTY,
-                                MAX_Qty = drop.Max_QTY
+                                Min_Qty = drop.Min_QTY,
+                                Max_Qty = drop.Max_QTY
                             });
                         }
                     }
@@ -257,20 +258,28 @@ namespace ArtifactMMO
             {
                 if (resourceHDR.Count > 0)
                 {
-                    await conn.ExecuteAsync(
-                        "INSERT INTO RESOURCE_HDR (NAME, CODE, SKILL, LEVEL) VALUES (@Name, @Code, @Skill, @Level);",
-                        resourceHDR,
-                        transaction
-                    ).ConfigureAwait(false);
+                    foreach(var hdr in resourceHDR)
+                    {
+                        await conn.ExecuteAsync(
+                            "INSERT INTO RESOURCE_HDR (NAME, CODE, SKILL, LEVEL) VALUES (@Name, @Code, @Skill, @Level);",
+                            new {hdr.Name, hdr.Code, hdr.Skill, hdr.Level},
+                            transaction
+                        ).ConfigureAwait(false);
+                    }
                 }
+
 
                 if (resourceLine.Count > 0)
                 {
-                    await conn.ExecuteAsync(
+                    foreach(var line in resourceLine)
+                    {
+                        await conn.ExecuteAsync(
                         "INSERT INTO RESOURCE_LINES (HDR_CODE, CODE, RATE, MIN_QTY, MAX_QTY) VALUES (@HDR_Code, @Code, @Rate, @Min_Qty, @Max_Qty);",
-                        resourceLine,
+                        new {line.HDR_Code, line.Code, line.Rate, line.Min_Qty, line.Max_Qty},
                         transaction
-                    ).ConfigureAwait(false);
+                        ).ConfigureAwait(false);
+                    }
+                    
                 }
 
                 await transaction.CommitAsync().ConfigureAwait(false);
@@ -357,8 +366,8 @@ namespace ArtifactMMO
         public string? HDR_Code { get; set; }
         public string? Code { get; set; }
         public int? Rate { get; set; }
-        public int? MIN_Qty { get; set; }
-        public int? MAX_Qty { get; set; }
+        public int? Min_Qty { get; set; }
+        public int? Max_Qty { get; set; }
 
     }
 

@@ -50,7 +50,7 @@ namespace ArtifactMMO
                     .MoreChoicesText("[blue](Move up and down to see more selections)[/]")
                     .AddChoices(new[] {
                         "Character Info","Auto Ingot",
-                        "Auto Attack","Auto Plank",
+                        "Auto Attack","Auto Plank","Generate Database",
                         "Exit"
                         //,"ManualQ"  //Comment Out for Working Build.
                 }));
@@ -84,6 +84,10 @@ namespace ArtifactMMO
                     AnsiConsole.WriteLine($"You selected {uiChoice}");
                     break;
                 
+                case "Generate Database":
+                    await sql.SQLiteUpdate();
+                    break;
+
                 case "ManualQ":
                     //await api.PerformActionAsync<AttackResponse>(characterName, token, "fight", new{}, "Attacking Mob:");
                     await sql.SQLiteUpdate();
