@@ -8,7 +8,6 @@ using Spectre.Console.Json;
 using Microsoft.Data.Sqlite;
 using System.Text.Json.Serialization;
 using System.Text.Json;
-using System.Data.SQLite;
 using Dapper;
 
 namespace ArtifactMMO
@@ -94,9 +93,9 @@ namespace ArtifactMMO
         private async Task SaveLocationsToDatabase(List<LocationData> locations)
         {
             string dbPath = "ArtifactDB.db";
-            string connectionString = $"Data Source={dbPath};Version=3;";
+            string connectionString = $"Data Source={dbPath};";
 
-            using var conn = new SQLiteConnection(connectionString);
+            using var conn = new SqliteConnection(connectionString);
 
             await conn.OpenAsync();
 
@@ -224,9 +223,9 @@ namespace ArtifactMMO
         private async Task SaveResourceToDatabase(List<ResourceHDRData> resourceHDR, List<ResourceLineData> resourceLine)
         {
             string dbPath = "ArtifactDB.db";
-            string connectionString = $"Data Source={dbPath};Version=3;";
+            string connectionString = $"Data Source={dbPath};";
 
-            using var conn = new SQLiteConnection(connectionString);
+            using var conn = new SqliteConnection(connectionString);
 
             await conn.OpenAsync().ConfigureAwait(false);
 
@@ -251,6 +250,9 @@ namespace ArtifactMMO
             //Clear Table
             await conn.ExecuteAsync("DELETE FROM RESOURCE_HDR;").ConfigureAwait(false);
             await conn.ExecuteAsync("DELETE FROM RESOURCE_LINES;").ConfigureAwait(false);
+
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_HDR';").ConfigureAwait(false);
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_LINES';").ConfigureAwait(false);
 
             using var transaction = await conn.BeginTransactionAsync().ConfigureAwait(false);
 

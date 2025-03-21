@@ -1,16 +1,9 @@
 using System;
-using System.Diagnostics.Metrics;
-using System.Linq.Expressions;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Security.Principal;
-using System.Text;
-using System.Text.Json;
+using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
-using Spectre.Console;
-using Spectre.Console.Json;
+using Dapper;
+using Microsoft.Data.Sqlite;
 
 
 namespace ArtifactMMO
@@ -272,33 +265,6 @@ namespace ArtifactMMO
             }
             
         }
-    
-        public async Task AutoBasicItemTask(string characterName, string token)
-        {
-            //----------------------------------------------------
-            //  TODO
-            //  - Create Starting Sequence
-            //  - Harvest Item
-            //  - Trade in item
-            //  - Complete Task when all items are handed in
-            //  - Stop when Task completed
-            //----------------------------------------------------
-
-            characterInfoResponse? charinfo = await api.CharacterInfoAsync(characterName, token);
-
-            if(charinfo != null)
-            {
-                //DEFINE VARIABLES AND CLASSES
-                //Vars
-                int gatherX = charinfo.X, gatherY = charinfo.Y, totalItems = 0, totalTaskItems = 0;
-                //Classes
-                gatheringResponse gatheringInfo = new gatheringResponse();
-                MoveResponse? moveInfo = new MoveResponse();
-
-                Console.WriteLine(totalItems);
-                Console.WriteLine(totalTaskItems);
-            } 
-        }
 
         public async Task AutoPlankGathering(string characterName, string token)
         {
@@ -407,6 +373,74 @@ namespace ArtifactMMO
 
                 }
             }
+        }
+    
+        public async Task AutoBaseGathering(string characterName, string token)
+        {
+            characterInfoResponse? charInfo = await api.CharacterInfoAsync(characterName, token);
+
+            if(charInfo != null)
+            {
+                int? totalItems = 0, maxItems = charInfo.InventoryMaxItems;
+                int  gatherX = charInfo.X, gatherY = charInfo.Y;
+                gatheringResponse? gatheringInfo = new gatheringResponse();
+                bankItemResponse? bankItemInfo = new bankItemResponse();
+                MoveResponse? moveInfo = new MoveResponse();
+
+                if(charInfo?.Inventory != null)
+                {
+                    foreach(var item in charInfo.Inventory)
+                    {
+                        if (item.Quantity > 0)
+                        {
+                            totalItems += item.Quantity;
+                            Console.WriteLine($"There was {item.Quantity} of {item.Code} so the new total is {totalItems}");
+                        }
+                    }
+                }
+
+                while(true)
+                {
+                    while(totalItems < maxItems)
+                    {
+                        gatheringInfo = await api.PerformActionAsync<gatheringResponse>(characterName, token, "gathering", new{}, $"Gathering item:");
+
+                        if(gatheringInfo?.Detail?.Items != null)
+                        {
+                            foreach(var item in gatheringInfo.Detail.Items)
+                            {
+                                if (item.Quantity > 0)
+                                {
+                                    totalItems += item.Quantity;
+                                    Console.WriteLine($"There was {item.Quantity} of {item.Code} so the new total is {totalItems}");
+                                }
+                            }
+                        }
+                    }
+
+                    moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move",new {x=4, y=1}, "Moving to the Bank");
+
+                    if(moveInfo?.Character?.Inventory != null)
+                    {
+                        foreach(var item in moveInfo.Character.Inventory)
+                        {
+                            if(item.Quantity > 0)
+                            {
+                                await api.PerformActionAsync<bankItemResponse>(characterName, token, "bank/deposit", new {code = item.Code, quantity = item.Quantity}, $"Banking {item.Code}:");
+                            } 
+                        }
+
+                        totalItems = 0;
+                    }
+
+                    await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new {x = gatherX, y = gatherY}, $"Moving to Gathering Spot");
+                }
+            }
+        }
+    
+        public void AutoMiningLeveling(string characterName, string token)
+        {
+            
         }
     }
 }
