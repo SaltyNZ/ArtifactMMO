@@ -440,7 +440,31 @@ namespace ArtifactMMO
     
         public void AutoMiningLeveling(string characterName, string token)
         {
+            /*
             
+            -----------------------------------THE PLAN-----------------------------------
+            Create a script that automatically levels up a player in mining skill.
+            Use SQLite and other skills learnt to automate the process.
+
+            Rough outline:
+                - Set global variables
+                - Start While True loop
+                    - Get relevant infomation through the use of the SQLite database
+                        Resources required, The level cap, the item to craft ETC
+                    - Set the relevant variables that chagne per item.
+                        Like resources needed to craft ETC (Steel is Iron and Coal)
+                    - Empty inventory leaving the needed resources
+                    - Start Level Checking loop
+                        - Move to the resource and gather (Need checking to handle 2 item crafts)
+                        - Move to next resource if required.
+                        - Craft item
+                        - Deposit
+                        - Set level to check if it needs to move on.
+                        - Loop or Break
+                    -Loop
+
+
+            */
         }
     }
 }
