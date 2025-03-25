@@ -14,6 +14,92 @@ namespace ArtifactMMO
 {
     public class SQLiteScript
     {
+
+        public async Task<List<ResourceHDRData>> RetrieveResourceHdrData()
+        {
+            string dbPath = "ArtifactDB.db";
+            string connectionString = $"Data Source={dbPath};";
+
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ResourceHDRData>("SELECT * FROM RESOURCE_HDR;").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
+        private async Task<List<ResourceLineData>> RetrieveResourceLineData()
+        {
+            string dbPath = "ArtifactDB.db";
+            string connectionString = $"Data Source={dbPath};";
+
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ResourceLineData>("SELECT * FROM RESOURCE_LINES;").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         public async Task SQLiteUpdate()
         {
             await GetLocations();

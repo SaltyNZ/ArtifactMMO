@@ -11,6 +11,7 @@ namespace ArtifactMMO
     public class AutomationScripts
     {
         ArtifactApiService api = new ArtifactApiService();
+        SQLiteScript sql = new SQLiteScript();
         private readonly HttpClient _client;
         public AutomationScripts()
         {
@@ -462,9 +463,26 @@ namespace ArtifactMMO
                         - Set level to check if it needs to move on.
                         - Loop or Break
                     -Loop
-
-
             */
+
+
+
+            //Set variables
+            int level = 0, leveltarget = 0;
+            string sqliteConnection = "";
+
+            while(true)
+            {
+                //Relevant Infomation form SQLite
+                
+                //Reset Variables
+
+                while(level < leveltarget)
+                {
+
+                }
+            }
+
         }
     }
 }
