@@ -52,8 +52,8 @@ namespace ArtifactMMO
                         .MoreChoicesText("[blue](Move up and down to see more selections)[/]")
                         .AddChoices(new[] {
                             "Character Info","Auto Ingot", "Auto Gathering",
-                            "Auto Attack","Auto Plank","Generate Database",
-                            "Exit"
+                            "Auto Attack","Auto Plank","Auto Mining Level",
+                            "Generate Database","Exit"
                             //,"ManualQ"  //Comment Out for Working Build.
                     }));
 
@@ -81,6 +81,10 @@ namespace ArtifactMMO
                     case "Auto Gathering":
                         await auto.AutoBaseGathering(characterName ?? "", token);
                         AnsiConsole.WriteLine($"You selected {uiChoice}");
+                        break;
+                    
+                    case "Auto Mining Level":
+                        await auto.AutoMiningLeveling(characterName ?? "", token);
                         break;
 
                     case "Exit":

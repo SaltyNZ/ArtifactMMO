@@ -439,7 +439,7 @@ namespace ArtifactMMO
             }
         }
     
-        public void AutoMiningLeveling(string characterName, string token)
+        public async Task AutoMiningLeveling(string characterName, string token)
         {
             /*
             
@@ -465,24 +465,51 @@ namespace ArtifactMMO
                     -Loop
             */
 
-
+            //Call Character
+            characterInfoResponse? charInfo = await api.CharacterInfoAsync(characterName, token);
 
             //Set variables
-            int level = 0, leveltarget = 0;
-            string sqliteConnection = "";
-
-            while(true)
+            if(charInfo != null)
             {
-                //Relevant Infomation form SQLite
-                
-                //Reset Variables
+                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0;
+                string? currentBestItem = "";
 
-                while(level < leveltarget)
-                {
+                // while(true)
+                // {
+                    //Relevant Infomation form SQLite
+                    var resourceHDRData = await sql.RetrieveResourceHdrData();
+                    var resourceLineData = await sql.RetrieveResourceLineData();
+                    var itemHDRData = await sql.RetrieveItemHdrData("mining", "resource", "'bar','alloy'");
+                    //Set up logic
 
-                }
+                    //Get the item to craft and the next item trigger to break loop
+                    foreach(var hdr in itemHDRData)
+                    {
+                        
+                        if(hdr.Level <= level && (hdr.Code != "obsidian" || hdr.Code != "strangold"))
+                        {
+                            currentBestLevel = hdr.Level;
+                            currentBestItem = hdr.Code;
+                        }
+                        else if (hdr.Level > level && hdr.Level < leveltarget)
+                        {
+                            leveltarget = hdr.Level;
+                        }
+                        
+                    }
+
+                    Console.WriteLine($"The Character Mining Level is {level}");
+                    Console.WriteLine($"The Item to Craft is Level {currentBestLevel}. {currentBestItem}");
+                    Console.WriteLine($"The Next Mining Level is {leveltarget}");
+
+                    //Reset Variables
+
+                    // while(level < leveltarget)
+                    // {
+
+                    // }
+                //}
             }
-
         }
     }
 }
