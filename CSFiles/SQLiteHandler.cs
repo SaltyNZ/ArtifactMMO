@@ -8,27 +8,111 @@ using Spectre.Console.Json;
 using Microsoft.Data.Sqlite;
 using System.Text.Json.Serialization;
 using System.Text.Json;
-using System.Data.SQLite;
 using Dapper;
 
 namespace ArtifactMMO
 {
     public class SQLiteScript
     {
-        public async Task SQLiteUpdate()
-        {
-            await GetLocations();
-            await GetResourceInfo();
+        private static string dbPath = "ArtifactDB.db";
+        private static string connectionString = $"Data Source={dbPath};";
 
-            return;
+        public async Task<List<ResourceHDRData>> RetrieveResourceHdrData()
+        {
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ResourceHDRData>("SELECT * FROM RESOURCE_HDR;").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
+        public async Task<List<ResourceLineData>> RetrieveResourceLineData()
+        {
+
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ResourceLineData>("SELECT * FROM RESOURCE_LINES;").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
+        public async Task<List<ItemHDRData>> RetrieveItemHdrData()
+        {
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ItemHDRData>("SELECT * FROM ITEM_HDR;").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
+        public async Task<List<ItemHDRData>> RetrieveItemHdrData(string skill)
+        {
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ItemHDRData>($"SELECT * FROM ITEM_HDR WHERE SKILL = '{skill}';").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
+        public async Task<List<ItemHDRData>> RetrieveItemHdrData(string skill, string type, string subType)
+        {
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ItemHDRData>($"SELECT * FROM ITEM_HDR WHERE SKILL = '{skill}' AND TYPE = '{type}' AND SUBTYPE IN ({subType});").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
+        public async Task<List<ItemLineData>> RetrieveItemLineData()
+        {
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ItemLineData>("SELECT * FROM ITEM_LINES;").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
+        public async Task<List<ItemLineData>> RetrieveItemLineData(string code)
+        {
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ItemLineData>($"SELECT * FROM ITEM_LINES WHERE HDR_CODE = '{code}';").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
         }
 
 
 
 
+        public async Task SQLiteUpdate()
+        {
+            await GetLocations();
+            await GetResourceInfo();
+            await GetItemInfo();
 
-
-
+            return;
+        }
 
 
 
@@ -94,9 +178,9 @@ namespace ArtifactMMO
         private async Task SaveLocationsToDatabase(List<LocationData> locations)
         {
             string dbPath = "ArtifactDB.db";
-            string connectionString = $"Data Source={dbPath};Version=3;";
+            string connectionString = $"Data Source={dbPath};";
 
-            using var conn = new SQLiteConnection(connectionString);
+            using var conn = new SqliteConnection(connectionString);
 
             await conn.OpenAsync();
 
@@ -169,7 +253,7 @@ namespace ArtifactMMO
 
                 string json = await response.Content.ReadAsStringAsync();
                 //Console.WriteLine($"API Response (Raw JSON): {json}"); //Debuging line
-                ResourceAPIResponse? apiResponse = JsonSerializer.Deserialize<ResourceAPIResponse>(json);
+                APIResponse<ResourceAPIResponse>? apiResponse = JsonSerializer.Deserialize<APIResponse<ResourceAPIResponse>>(json);
 
                 if(apiResponse is null || apiResponse.Data.Count == 0)
                 {
@@ -224,9 +308,9 @@ namespace ArtifactMMO
         private async Task SaveResourceToDatabase(List<ResourceHDRData> resourceHDR, List<ResourceLineData> resourceLine)
         {
             string dbPath = "ArtifactDB.db";
-            string connectionString = $"Data Source={dbPath};Version=3;";
+            string connectionString = $"Data Source={dbPath};";
 
-            using var conn = new SQLiteConnection(connectionString);
+            using var conn = new SqliteConnection(connectionString);
 
             await conn.OpenAsync().ConfigureAwait(false);
 
@@ -251,6 +335,9 @@ namespace ArtifactMMO
             //Clear Table
             await conn.ExecuteAsync("DELETE FROM RESOURCE_HDR;").ConfigureAwait(false);
             await conn.ExecuteAsync("DELETE FROM RESOURCE_LINES;").ConfigureAwait(false);
+
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_HDR';").ConfigureAwait(false);
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='RESOURCE_LINES';").ConfigureAwait(false);
 
             using var transaction = await conn.BeginTransactionAsync().ConfigureAwait(false);
 
@@ -288,7 +375,166 @@ namespace ArtifactMMO
             catch (Exception ex)
             {
                 await transaction.RollbackAsync().ConfigureAwait(false);
-                Console.WriteLine($"Error saving locations: {ex.Message}");
+                Console.WriteLine($"Error saving Resource: {ex.Message}");
+            }
+            finally
+            {
+                await conn.CloseAsync().ConfigureAwait(false);
+            }
+
+        }
+
+        #endregion
+
+
+        #region Get Item Data
+
+        private async Task GetItemInfo()
+        {
+            string apiUrlTemplate = "https://api.artifactsmmo.com/items?page=";
+            int page = 1;
+            int totalPages = 1;
+            List<ItemHDRData> allItemHDR = new();
+            List<ItemLineData> allItemLine = new();
+
+            using HttpClient client = new();
+
+            do
+            {
+                string apiUrl = apiUrlTemplate + page;
+                HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                if(!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Failed to get Data from API");
+                    break;
+                }
+
+                string json = await response.Content.ReadAsStringAsync();
+                //Console.WriteLine($"API Response (Raw JSON): {json}"); //Debuging line
+                APIResponse<ItemAPIResponse>? apiResponse = JsonSerializer.Deserialize<APIResponse<ItemAPIResponse>>(json);
+
+                if(apiResponse is null || apiResponse.Data.Count == 0)
+                {
+                    Console.WriteLine($"No Data Returned on Page {page}, Data Count = {apiResponse?.Data.Count}, APIURL = {apiUrl}");
+                    break;
+                }
+
+                totalPages = apiResponse.Pages;
+
+                List<ItemHDRData> itemHDR = apiResponse.Data.Select(HDR => new ItemHDRData
+                {
+                    Name = HDR.Name,
+                    Code = HDR.Code,
+                    Level = HDR.Level,
+                    Type = HDR.Type,
+                    SubType = HDR.SubType,
+                    Skill = HDR?.Craft?.Skill
+                }).ToList();
+
+                allItemHDR.AddRange(itemHDR);
+
+                foreach(var item in apiResponse.Data)
+                {
+                    if (item.Craft?.Items != null)
+                    {
+                        foreach (var itemmat in item.Craft.Items)
+                        {
+                            allItemLine.Add(new ItemLineData
+                            {
+                                HDR_Code = item.Code,
+                                Code = itemmat.Code,
+                                Qty = itemmat.QTY
+                            });
+                        }
+                    }
+                }
+                
+                page++;
+
+            } while(page <= totalPages);
+
+            if(allItemHDR.Any())
+            {
+                await SaveItemsToDatabase(allItemHDR, allItemLine).ConfigureAwait(false);
+            }
+            else
+            {
+                Console.WriteLine("No Item Found.");
+            }
+        }
+
+        private async Task SaveItemsToDatabase(List<ItemHDRData> HDR, List<ItemLineData> Line)
+        {
+            string dbPath = "ArtifactDB.db";
+            string connectionString = $"Data Source={dbPath};";
+
+            using var conn = new SqliteConnection(connectionString);
+
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            await conn.ExecuteAsync(@"
+                CREATE TABLE IF NOT EXISTS ITEM_HDR (
+                    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    NAME TEXT,
+                    CODE TEXT UNIQUE,
+                    SKILL TEXT,
+                    LEVEL INTEGER,
+                    TYPE TEXT,
+                    SUBTYPE TEXT
+                );
+                CREATE TABLE IF NOT EXISTS ITEM_LINES (
+                    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    HDR_CODE TEXT,
+                    CODE TEXT,
+                    QTY INTEGER
+                );
+            ").ConfigureAwait(false);
+            
+            //Clear Table
+            await conn.ExecuteAsync("DELETE FROM ITEM_HDR;").ConfigureAwait(false);
+            await conn.ExecuteAsync("DELETE FROM ITEM_LINES;").ConfigureAwait(false);
+
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='ITEM_HDR';").ConfigureAwait(false);
+            await conn.ExecuteAsync("DELETE FROM sqlite_sequence WHERE name='ITEM_LINES';").ConfigureAwait(false);
+
+            using var transaction = await conn.BeginTransactionAsync().ConfigureAwait(false);
+
+            try
+            {
+                if (HDR.Count > 0)
+                {
+                    foreach(var hdr in HDR)
+                    {
+                        await conn.ExecuteAsync(
+                            "INSERT INTO ITEM_HDR (NAME, CODE, SKILL, LEVEL, TYPE, SUBTYPE) VALUES (@Name, @Code, @Skill, @Level, @Type, @SubType);",
+                            new {hdr.Name, hdr.Code, hdr.Skill, hdr.Level, hdr.Type, hdr.SubType},
+                            transaction
+                        ).ConfigureAwait(false);
+                    }
+                }
+
+
+                if (Line.Count > 0)
+                {
+                    foreach(var line in Line)
+                    {
+                        await conn.ExecuteAsync(
+                        "INSERT INTO ITEM_LINES (HDR_CODE, CODE, QTY) VALUES (@HDR_Code, @Code, @Qty);",
+                        new {line.HDR_Code, line.Code, line.Qty},
+                        transaction
+                        ).ConfigureAwait(false);
+                    }
+                    
+                }
+
+                await transaction.CommitAsync().ConfigureAwait(false);
+                Console.WriteLine($"Stored {HDR.Count} item headers and {Line.Count} item lines in the database.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync().ConfigureAwait(false);
+                Console.WriteLine($"Error saving items: {ex.Message}");
             }
             finally
             {
@@ -300,7 +546,9 @@ namespace ArtifactMMO
         #endregion
     }
 
-    //DATA CLASSES
+
+
+    #region Data Classes
     public class LocationData
     {
         public string? Name { get; set; }
@@ -371,10 +619,10 @@ namespace ArtifactMMO
 
     }
 
-    public class ResourceAPIResponse
+    public class APIResponse<TResponse>
     {
         [JsonPropertyName("data")]
-        public List<ApiResource> Data { get; set; } = new();
+        public List<TResponse> Data { get; set; } = new();
 
         [JsonPropertyName("total")]
         public int Total { get; set; }
@@ -389,7 +637,7 @@ namespace ArtifactMMO
         public int Pages { get; set; }
     }
 
-    public class ApiResource
+    public class ResourceAPIResponse
     {
         [JsonPropertyName("name")]
         public string? Name { get; set; }
@@ -422,4 +670,68 @@ namespace ArtifactMMO
         [JsonPropertyName("max_quantity")]
         public int? Max_QTY { get; set; }
     }
+
+    public class ItemHDRData
+    {
+        public string? Name { get; set; }
+        public string? Code { get; set; }
+        public string? Skill { get; set; }
+        public int? Level { get; set; }
+        public string? Type { get; set; }
+        public string? SubType { get; set; }
+    }
+
+    public class ItemLineData
+    {
+        public string? HDR_Code { get; set; }
+        public string? Code { get; set; }
+        public int? Qty { get; set; }
+    }
+
+    public class ItemAPIResponse
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
+        
+        [JsonPropertyName("level")]
+        public int? Level { get; set; }
+
+        [JsonPropertyName("type")]
+        public string? Type { get; set; }
+
+        [JsonPropertyName("subtype")]
+        public string? SubType { get; set; }
+
+        [JsonPropertyName("craft")]
+        public ItemCraft? Craft { get; set; }
+
+    }
+
+    public class ItemCraft
+    {
+        [JsonPropertyName("skill")]
+        public string? Skill { get; set; }
+        
+        [JsonPropertyName("level")]
+        public int? Level { get; set; }
+
+        [JsonPropertyName("quantity")]
+        public int? QTY { get; set; }
+
+        [JsonPropertyName("items")]
+        public List<Item>? Items { get; set; }
+    }
+
+    public class Item
+    {
+        [JsonPropertyName("code")]
+        public string? Code { get; set; }
+
+        [JsonPropertyName("quantity")]
+        public int? QTY { get; set; }
+    }
+    #endregion
 }

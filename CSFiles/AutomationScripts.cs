@@ -1,16 +1,9 @@
 using System;
-using System.Diagnostics.Metrics;
-using System.Linq.Expressions;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Security.Principal;
-using System.Text;
-using System.Text.Json;
+using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
-using Spectre.Console;
-using Spectre.Console.Json;
+using Dapper;
+using Microsoft.Data.Sqlite;
 
 
 namespace ArtifactMMO
@@ -18,6 +11,7 @@ namespace ArtifactMMO
     public class AutomationScripts
     {
         ArtifactApiService api = new ArtifactApiService();
+        SQLiteScript sql = new SQLiteScript();
         private readonly HttpClient _client;
         public AutomationScripts()
         {
@@ -272,33 +266,6 @@ namespace ArtifactMMO
             }
             
         }
-    
-        public async Task AutoBasicItemTask(string characterName, string token)
-        {
-            //----------------------------------------------------
-            //  TODO
-            //  - Create Starting Sequence
-            //  - Harvest Item
-            //  - Trade in item
-            //  - Complete Task when all items are handed in
-            //  - Stop when Task completed
-            //----------------------------------------------------
-
-            characterInfoResponse? charinfo = await api.CharacterInfoAsync(characterName, token);
-
-            if(charinfo != null)
-            {
-                //DEFINE VARIABLES AND CLASSES
-                //Vars
-                int gatherX = charinfo.X, gatherY = charinfo.Y, totalItems = 0, totalTaskItems = 0;
-                //Classes
-                gatheringResponse gatheringInfo = new gatheringResponse();
-                MoveResponse? moveInfo = new MoveResponse();
-
-                Console.WriteLine(totalItems);
-                Console.WriteLine(totalTaskItems);
-            } 
-        }
 
         public async Task AutoPlankGathering(string characterName, string token)
         {
@@ -406,6 +373,154 @@ namespace ArtifactMMO
                     await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new {x = gatherX, y = gatherY}, $"Moving to {wood}");
 
                 }
+            }
+        }
+    
+        public async Task AutoBaseGathering(string characterName, string token)
+        {
+            characterInfoResponse? charInfo = await api.CharacterInfoAsync(characterName, token);
+
+            if(charInfo != null)
+            {
+                int? totalItems = 0, maxItems = charInfo.InventoryMaxItems;
+                int  gatherX = charInfo.X, gatherY = charInfo.Y;
+                gatheringResponse? gatheringInfo = new gatheringResponse();
+                bankItemResponse? bankItemInfo = new bankItemResponse();
+                MoveResponse? moveInfo = new MoveResponse();
+
+                if(charInfo?.Inventory != null)
+                {
+                    foreach(var item in charInfo.Inventory)
+                    {
+                        if (item.Quantity > 0)
+                        {
+                            totalItems += item.Quantity;
+                            Console.WriteLine($"There was {item.Quantity} of {item.Code} so the new total is {totalItems}");
+                        }
+                    }
+                }
+
+                while(true)
+                {
+                    while(totalItems < maxItems)
+                    {
+                        gatheringInfo = await api.PerformActionAsync<gatheringResponse>(characterName, token, "gathering", new{}, $"Gathering item:");
+
+                        if(gatheringInfo?.Detail?.Items != null)
+                        {
+                            foreach(var item in gatheringInfo.Detail.Items)
+                            {
+                                if (item.Quantity > 0)
+                                {
+                                    totalItems += item.Quantity;
+                                    Console.WriteLine($"There was {item.Quantity} of {item.Code} so the new total is {totalItems}");
+                                }
+                            }
+                        }
+                    }
+
+                    moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move",new {x=4, y=1}, "Moving to the Bank");
+
+                    if(moveInfo?.Character?.Inventory != null)
+                    {
+                        foreach(var item in moveInfo.Character.Inventory)
+                        {
+                            if(item.Quantity > 0)
+                            {
+                                await api.PerformActionAsync<bankItemResponse>(characterName, token, "bank/deposit", new {code = item.Code, quantity = item.Quantity}, $"Banking {item.Code}:");
+                            } 
+                        }
+
+                        totalItems = 0;
+                    }
+
+                    await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new {x = gatherX, y = gatherY}, $"Moving to Gathering Spot");
+                }
+            }
+        }
+    
+        public async Task AutoMiningLeveling(string characterName, string token)
+        {
+            /*
+            
+            -----------------------------------THE PLAN-----------------------------------
+            Create a script that automatically levels up a player in mining skill.
+            Use SQLite and other skills learnt to automate the process.
+
+            Rough outline:
+                - Set global variables
+                - Start While True loop
+                    - Get relevant infomation through the use of the SQLite database
+                        Resources required, The level cap, the item to craft ETC
+                    - Set the relevant variables that chagne per item.
+                        Like resources needed to craft ETC (Steel is Iron and Coal)
+                    - Empty inventory leaving the needed resources
+                    - Start Level Checking loop
+                        - Move to the resource and gather (Need checking to handle 2 item crafts)
+                        - Move to next resource if required.
+                        - Craft item
+                        - Deposit
+                        - Set level to check if it needs to move on.
+                        - Loop or Break
+                    -Loop
+            */
+
+            //Call Character
+            characterInfoResponse? charInfo = await api.CharacterInfoAsync(characterName, token);
+
+            //Set variables
+            if(charInfo != null)
+            {
+                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems;
+                string? currentBestItem = "";
+                
+
+                // while(true)
+                // {
+                    //Relevant Infomation form SQLite
+                    var resourceHDRData = await sql.RetrieveResourceHdrData();
+                    var resourceLineData = await sql.RetrieveResourceLineData();
+                    var itemHDRData = await sql.RetrieveItemHdrData("mining", "resource", "'bar','alloy'");
+                    
+                    //Set up logic
+
+                    //Get the item to craft and the next item trigger to break loop
+                    foreach(var hdr in itemHDRData)
+                    {
+                        
+                        if(hdr.Level <= level && (hdr.Code != "obsidian" || hdr.Code != "strangold"))
+                        {
+                            currentBestLevel = hdr.Level;
+                            currentBestItem = hdr.Code;
+                        }
+                        else if (hdr.Level > level && hdr.Level < leveltarget)
+                        {
+                            leveltarget = hdr.Level;
+                        }
+                        
+                    }
+
+                    if(currentBestItem != "" && currentBestItem != null)
+                    {
+                        var ItemLineData = await sql.RetrieveItemLineData(currentBestItem);
+
+                        foreach(var line in ItemLineData)
+                        {
+                            Console.WriteLine($"Crafting Ingrediant {line.Code} need {line.Qty}");
+                        }
+                    }
+                    Console.WriteLine($"The Character Mining Level is {level}");
+                    Console.WriteLine($"The Item to Craft is Level {currentBestLevel}. {currentBestItem}");
+                    Console.WriteLine($"The Next Mining Level is {leveltarget}");
+
+                    //Reset Variables
+                    //*
+                    while(level < leveltarget)
+                    {
+                        
+                    }
+                    //*/
+                //}
             }
         }
     }

@@ -42,57 +42,66 @@ namespace ArtifactMMO
             var characterName = AnsiConsole.Prompt(
             new TextPrompt<string>("What's your [red]character's[/] name?"));
             AnsiConsole.WriteLine($"Character name is: {characterName}");
-
-            var uiChoice = AnsiConsole.Prompt(
-                new SelectionPrompt<string>()
-                    .Title("[blue]Select what command to use: :computer_disk:[/]")
-                    .PageSize(10)
-                    .MoreChoicesText("[blue](Move up and down to see more selections)[/]")
-                    .AddChoices(new[] {
-                        "Character Info","Auto Ingot",
-                        "Auto Attack","Auto Plank","Generate Database",
-                        "Exit"
-                        //,"ManualQ"  //Comment Out for Working Build.
-                }));
-
-            switch (uiChoice)
+            string choice = "No";
+            while(choice != "Exit")
             {
-                case "Character Info":
-                    await api.CharacterInfoUIAsync(characterName ?? "", token);
-                    break;
-                
-                case "Auto Ingot":
-                    await auto.AutoIngotGathering(characterName, token);
-                    AnsiConsole.WriteLine($"You selected {uiChoice}");
-                    break;
+                var uiChoice = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("[blue]Select what command to use: :computer_disk:[/]")
+                        .PageSize(10)
+                        .MoreChoicesText("[blue](Move up and down to see more selections)[/]")
+                        .AddChoices(new[] {
+                            "Character Info","Auto Ingot", "Auto Gathering",
+                            "Auto Attack","Auto Plank","Auto Mining Level",
+                            "Generate Database","Exit"
+                            //,"ManualQ"  //Comment Out for Working Build.
+                    }));
 
-                case "Auto Attack":
-                    await auto.AutoAttack(characterName, token);
-                    AnsiConsole.WriteLine($"You selected {uiChoice}");
-                    break;
+                switch (uiChoice)
+                {
+                    case "Character Info":
+                        await api.CharacterInfoUIAsync(characterName ?? "", token);
+                        break;
+                    
+                    case "Auto Ingot":
+                        await auto.AutoIngotGathering(characterName ?? "", token);
+                        AnsiConsole.WriteLine($"You selected {uiChoice}");
+                        break;
 
-                case "Auto Plank":
-                    await auto.AutoPlankGathering(characterName, token);
-                    AnsiConsole.WriteLine($"You selected {uiChoice}");
-                    break;
-                
-                case "Auto Task":
-                    AnsiConsole.WriteLine($"You selected {uiChoice}");
-                    break;
+                    case "Auto Attack":
+                        await auto.AutoAttack(characterName ?? "", token);
+                        AnsiConsole.WriteLine($"You selected {uiChoice}");
+                        break;
 
-                case "Exit":
-                    AnsiConsole.WriteLine($"You selected {uiChoice}");
-                    break;
-                
-                case "Generate Database":
-                    await sql.SQLiteUpdate();
-                    break;
+                    case "Auto Plank":
+                        await auto.AutoPlankGathering(characterName ?? "", token);
+                        AnsiConsole.WriteLine($"You selected {uiChoice}");
+                        break;
+                    
+                    case "Auto Gathering":
+                        await auto.AutoBaseGathering(characterName ?? "", token);
+                        AnsiConsole.WriteLine($"You selected {uiChoice}");
+                        break;
+                    
+                    case "Auto Mining Level":
+                        await auto.AutoMiningLeveling(characterName ?? "", token);
+                        break;
 
-                case "ManualQ":
-                    //await api.PerformActionAsync<AttackResponse>(characterName, token, "fight", new{}, "Attacking Mob:");
-                    await sql.SQLiteUpdate();
-                    break;
-            }   
+                    case "Exit":
+                        AnsiConsole.WriteLine($"You selected {uiChoice}");
+                        choice = uiChoice;
+                        break;
+                    
+                    case "Generate Database":
+                        await sql.SQLiteUpdate();
+                        break;
+
+                    case "ManualQ":
+                        //await api.PerformActionAsync<AttackResponse>(characterName, token, "fight", new{}, "Attacking Mob:");
+                        await sql.SQLiteUpdate();
+                        break;
+                }   
+            }    
         }
     }
 }
