@@ -471,8 +471,9 @@ namespace ArtifactMMO
             //Set variables
             if(charInfo != null)
             {
-                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0;
+                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems;
                 string? currentBestItem = "";
+                
 
                 // while(true)
                 // {
@@ -480,6 +481,7 @@ namespace ArtifactMMO
                     var resourceHDRData = await sql.RetrieveResourceHdrData();
                     var resourceLineData = await sql.RetrieveResourceLineData();
                     var itemHDRData = await sql.RetrieveItemHdrData("mining", "resource", "'bar','alloy'");
+                    
                     //Set up logic
 
                     //Get the item to craft and the next item trigger to break loop
@@ -498,16 +500,26 @@ namespace ArtifactMMO
                         
                     }
 
+                    if(currentBestItem != "" && currentBestItem != null)
+                    {
+                        var ItemLineData = await sql.RetrieveItemLineData(currentBestItem);
+
+                        foreach(var line in ItemLineData)
+                        {
+                            Console.WriteLine($"Crafting Ingrediant {line.Code} need {line.Qty}");
+                        }
+                    }
                     Console.WriteLine($"The Character Mining Level is {level}");
                     Console.WriteLine($"The Item to Craft is Level {currentBestLevel}. {currentBestItem}");
                     Console.WriteLine($"The Next Mining Level is {leveltarget}");
 
                     //Reset Variables
-
-                    // while(level < leveltarget)
-                    // {
-
-                    // }
+                    //*
+                    while(level < leveltarget)
+                    {
+                        
+                    }
+                    //*/
                 //}
             }
         }

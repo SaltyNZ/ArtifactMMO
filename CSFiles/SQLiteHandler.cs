@@ -78,6 +78,30 @@ namespace ArtifactMMO
             return result.ToList();
         }
 
+        public async Task<List<ItemLineData>> RetrieveItemLineData()
+        {
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ItemLineData>("SELECT * FROM ITEM_LINES;").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
+        public async Task<List<ItemLineData>> RetrieveItemLineData(string code)
+        {
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<ItemLineData>($"SELECT * FROM ITEM_LINES WHERE HDR_CODE = '{code}';").ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
+
 
 
 
