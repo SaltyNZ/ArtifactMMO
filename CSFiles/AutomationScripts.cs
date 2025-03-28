@@ -471,7 +471,7 @@ namespace ArtifactMMO
             //Set variables
             if(charInfo != null)
             {
-                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems;
+                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems, craftable;
                 string? currentBestItem = "";
                 
 
@@ -499,22 +499,28 @@ namespace ArtifactMMO
                         }
                         
                     }
-
-                    if(currentBestItem != "" && currentBestItem != null)
-                    {
-                        var ItemLineData = await sql.RetrieveItemLineData(currentBestItem);
-
-                        foreach(var line in ItemLineData)
-                        {
-                            Console.WriteLine($"Crafting Ingrediant {line.Code} need {line.Qty}");
-                        }
-                    }
+                    
                     Console.WriteLine($"The Character Mining Level is {level}");
                     Console.WriteLine($"The Item to Craft is Level {currentBestLevel}. {currentBestItem}");
                     Console.WriteLine($"The Next Mining Level is {leveltarget}");
 
+                    if(currentBestItem != "" && currentBestItem != null)
+                    {
+                        var carftingInfo = await sql.GetGraftingInfo(currentBestItem);
+
+                        int i = 1;
+                        foreach(var craftitem in carftingInfo)
+                        {
+                            Console.WriteLine($"{i}. Need {craftitem.Quantity} of {craftitem.Material} to make {craftitem.Item} it is at X:{craftitem.X} Y:{craftitem.Y}");
+                            craftable = (int)(maxitems*(craftitem.Quantity / 10.0));
+                            Console.WriteLine($"The total amount of items that can be gathered are {craftable}");
+                            i++;
+                        }
+                    }
+                    
+
                     //Reset Variables
-                    //*
+                    /*
                     while(level < leveltarget)
                     {
                         
