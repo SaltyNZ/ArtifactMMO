@@ -471,7 +471,7 @@ namespace ArtifactMMO
             //Set variables
             if(charInfo != null)
             {
-                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems, craftable;
+                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems, craftable, itemMax, needed, currentTotal;
                 string? currentBestItem = "";
                 
 
@@ -516,16 +516,22 @@ namespace ArtifactMMO
                             Console.WriteLine($"The total amount of items that can be gathered are {craftable}");
                             i++;
                         }
+                        //Reset Variables
+                    ///*
+                        while(level < leveltarget)
+                        {
+                            foreach(var craftitem in carftingInfo)
+                            {
+                                await api.PerformActionAsync<MoveResponse>(characterName, token, "move",new {x=craftitem.X, y=craftitem.Y}, $"Moving to {craftitem.Item}");
+                                itemMax = (int)(maxitems*(craftitem.Quantity / 10.0));
+
+                            }
+                        }
+                    //*/
                     }
                     
 
-                    //Reset Variables
-                    /*
-                    while(level < leveltarget)
-                    {
-                        
-                    }
-                    //*/
+                    
                 //}
             }
         }
