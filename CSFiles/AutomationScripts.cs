@@ -447,27 +447,9 @@ namespace ArtifactMMO
             -----------------------------------THE PLAN-----------------------------------
             Create a script that automatically levels up a player in mining skill.
             Use SQLite and other skills learnt to automate the process.
-
-            Rough outline:
-                - Set global variables
-                - Start While True loop
-                    - Get relevant infomation through the use of the SQLite database
-                        Resources required, The level cap, the item to craft ETC
-                    - Set the relevant variables that chagne per item.
-                        Like resources needed to craft ETC (Steel is Iron and Coal)
-                    - Empty inventory leaving the needed resources
-                    - Start Level Checking loop
-                        - Move to the resource and gather (Need checking to handle 2 item crafts)
-                        - Move to next resource if required.
-                        - Craft item
-                        - Deposit
-                        - Set level to check if it needs to move on.
-                        - Loop or Break
-                    -Loop
             
             NOTES:
             //MANUAL ENTRY HERE - refers to data that will need to be changed to work with other skills and needs to be looked at if I want to create a 1 script fits all
-
             */
 
             //Call Character
@@ -534,11 +516,11 @@ namespace ArtifactMMO
                         foreach(var craftitem in carftingInfo)
                         {
                             Console.WriteLine($"{i}. Need {craftitem.Quantity} of {craftitem.Material} to make {craftitem.Item} it is at X:{craftitem.X} Y:{craftitem.Y}");
-                            craftable = (int)(maxitems*(craftitem.Quantity / itemcraftqty));
+                            craftable = (int)(maxitems*((double)craftitem.Quantity / itemcraftqty));
                             Console.WriteLine($"The total amount of items that can be gathered are {craftable}");
                             i++;
                         }
-
+                        
                         Console.WriteLine(carftingInfo.Count);
                         while(level < leveltarget)
                         {
@@ -565,7 +547,7 @@ namespace ArtifactMMO
                             foreach(var craftitem in carftingInfo)
                             {
                                 moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move",new {x=craftitem.X, y=craftitem.Y}, $"Moving to {craftitem.Material}");
-                                gathereditemMax = (int)(maxitems*(craftitem.Quantity / itemcraftqty));
+                                gathereditemMax = (int)(maxitems*((double)craftitem.Quantity / itemcraftqty));
                                 Console.WriteLine($"Need to gather {gathereditemMax}");
                                 gathereditems = 0;
                                 gatheredcraftable = 0;
@@ -603,10 +585,10 @@ namespace ArtifactMMO
                                     //Got to here
                                 }
 
-                                if((int)gatheredcraftable/itemcraftqty < craftable)
+                                if((double)gatheredcraftable/itemcraftqty < craftable)
                                 {
                                     Console.WriteLine($"Craftable was {craftable}");
-                                    craftable = (int)gatheredcraftable/craftitem.Quantity;
+                                    craftable = (int)(gatheredcraftable/(double)craftitem.Quantity);
                                     Console.WriteLine($"Craftable is now {craftable}");
                                 }
                                 
@@ -619,7 +601,6 @@ namespace ArtifactMMO
                             level = craftInfo?.Character?.MiningLevel; //MANUAL ENTRY HERE
                             Console.WriteLine($"Current Level is {level} trying to reach {leveltarget}");
                         }
-
                         Console.WriteLine("Debug Break New Level hit");
                         Console.ReadLine();
                     }
