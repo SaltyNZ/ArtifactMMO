@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Formats.Asn1;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.Sqlite;
@@ -469,9 +470,12 @@ namespace ArtifactMMO
             characterInfoResponse? charInfo = await api.CharacterInfoAsync(characterName, token);
 
             //Set variables
+            MoveResponse? moveInfo = new MoveResponse();
+            gatheringResponse? gatherInfo = new gatheringResponse();
+            craftResponse? craftInfo = new craftResponse();
             if(charInfo != null)
             {
-                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems;
+                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems, craftable = 0, gathereditemMax = 0, currentTotal = 0, gathereditems = 0, gatheredcraftable = 0;
                 string? currentBestItem = "";
                 
 
@@ -499,27 +503,111 @@ namespace ArtifactMMO
                         }
                         
                     }
-
-                    if(currentBestItem != "" && currentBestItem != null)
-                    {
-                        var ItemLineData = await sql.RetrieveItemLineData(currentBestItem);
-
-                        foreach(var line in ItemLineData)
-                        {
-                            Console.WriteLine($"Crafting Ingrediant {line.Code} need {line.Qty}");
-                        }
-                    }
+                    
                     Console.WriteLine($"The Character Mining Level is {level}");
                     Console.WriteLine($"The Item to Craft is Level {currentBestLevel}. {currentBestItem}");
                     Console.WriteLine($"The Next Mining Level is {leveltarget}");
 
-                    //Reset Variables
-                    //*
-                    while(level < leveltarget)
+                    if(currentBestItem != "" && currentBestItem != null)
                     {
-                        
-                    }
+                        var carftingInfo = await sql.GetGraftingInfo(currentBestItem);
+
+                        int i = 1;
+                        foreach(var craftitem in carftingInfo)
+                        {
+                            Console.WriteLine($"{i}. Need {craftitem.Quantity} of {craftitem.Material} to make {craftitem.Item} it is at X:{craftitem.X} Y:{craftitem.Y}");
+                            craftable = (int)(maxitems*(craftitem.Quantity / 10.0));
+                            Console.WriteLine($"The total amount of items that can be gathered are {craftable}");
+                            i++;
+                        }
+
+                        Console.WriteLine(carftingInfo.Count);
+                        //Reset Variables
+                    ///*
+                        while(level < leveltarget)
+                        {
+
+                            moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new { x=4, y=1}, "Moving to bank:");
+
+                            if(moveInfo != null)
+                            {
+                                if(moveInfo?.Character?.Inventory != null)
+                                {
+                                    foreach(var bankingitem in moveInfo.Character.Inventory)
+                                    {
+                                        if(bankingitem.Quantity > 0)
+                                        {
+                                            await api.PerformActionAsync<bankItemResponse>(characterName, token, "bank/deposit", new {code = bankingitem.Code, quantity = bankingitem.Quantity}, $"Banking {bankingitem.Quantity} of {bankingitem.Code}:");
+                                        }
+                                    }
+                                }
+                                
+                            }
+                            
+
+                            currentTotal = 0;
+                            foreach(var craftitem in carftingInfo)
+                            {
+                                moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move",new {x=craftitem.X, y=craftitem.Y}, $"Moving to {craftitem.Material}");
+                                gathereditemMax = (int)(maxitems*(craftitem.Quantity / 10.0));
+                                Console.WriteLine($"Need to gather {gathereditemMax}");
+                                gathereditems = 0;
+                                gatheredcraftable = 0;
+                                while(gathereditems < gathereditemMax && currentTotal < maxitems)
+                                {
+                                    
+                                    gatherInfo = await api.PerformActionAsync<gatheringResponse>(characterName, token, "gathering", new{}, $"Gathering {craftitem.Material}:");
+
+                                    if(gatherInfo?.Detail?.Items != null)
+                                    {
+                                        foreach(var item in gatherInfo.Detail.Items)
+                                        {
+                                            if(item.Quantity > 0 && item.Code == craftitem.Material)
+                                            {
+                                                gatheredcraftable += item.Quantity;
+                                                gathereditems += item.Quantity;
+                                                Console.WriteLine($"Gathered {item.Quantity} of {item.Code} the total for the item is {gatheredcraftable} and for the node {gathereditemMax}");
+
+                                                currentTotal += item.Quantity;
+                                                Console.WriteLine($"The item total is {currentTotal} of {maxitems}.");
+                                            }
+                                            else if (item.Quantity > 0)
+                                            {
+                                                gathereditems += item.Quantity;
+                                                Console.WriteLine($"Gathered {item.Quantity} of {item.Code} the total for this node is {gathereditems} of {gathereditemMax}");
+
+                                                currentTotal += item.Quantity;
+                                                Console.WriteLine($"The item total is {currentTotal} of {maxitems}.");
+                                            }
+                                        }
+                                    }
+
+                                    Console.WriteLine($"{gathereditems} < {gathereditemMax}");
+                                    Console.WriteLine($"{currentTotal} < {maxitems}");
+                                    //Got to here
+                                }
+
+                                if((int)gatheredcraftable/10 < craftable)
+                                {
+                                    Console.WriteLine($"Craftable was {craftable}");
+                                    craftable = (int)gatheredcraftable/craftitem.Quantity;
+                                    Console.WriteLine($"Craftable is now {craftable}");
+                                }
+                                
+                            }
+
+                            moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new { x=1, y=5}, "Moving to crafting:");
+
+                            craftInfo = await api.PerformActionAsync<craftResponse>(characterName, token, "crafting", new { code = currentBestItem, quantity = craftable}, $"Crafting {craftable} of {currentBestItem}");
+
+                            level = craftInfo?.Character?.MiningLevel;
+                            Console.WriteLine($"Current Level is {level} trying to reach {leveltarget}");
+                        }
                     //*/
+                    }
+                    
+
+                    
                 //}
             }
         }

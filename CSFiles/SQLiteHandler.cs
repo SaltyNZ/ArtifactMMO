@@ -16,7 +16,27 @@ namespace ArtifactMMO
     {
         private static string dbPath = "ArtifactDB.db";
         private static string connectionString = $"Data Source={dbPath};";
+        #region DataLists
 
+        public async Task<List<CraftingMaterial>> GetGraftingInfo(string item)
+        {
+            string query = @"
+            SELECT IL.HDR_CODE AS Item, IL.CODE AS Material, IL.QTY AS Quantity, M.X, M.Y  
+            FROM ITEM_LINES IL
+            JOIN ITEM_HDR IH ON IH.CODE = IL.HDR_CODE
+            JOIN RESOURCE_LINES RL ON RL.CODE = IL.CODE
+            JOIN MAP M ON M.CODE = RL.HDR_CODE
+            WHERE IL.HDR_CODE = @Item";
+
+            using var conn = new SqliteConnection(connectionString);
+            await conn.OpenAsync().ConfigureAwait(false);
+
+            var result = await conn.QueryAsync<CraftingMaterial>(query, new { Item = item }).ConfigureAwait(false);
+
+            await conn.CloseAsync().ConfigureAwait(false);
+
+            return result.ToList();
+        }
         public async Task<List<ResourceHDRData>> RetrieveResourceHdrData()
         {
             using var conn = new SqliteConnection(connectionString);
@@ -101,7 +121,7 @@ namespace ArtifactMMO
 
             return result.ToList();
         }
-
+        #endregion
 
 
 
@@ -732,6 +752,15 @@ namespace ArtifactMMO
 
         [JsonPropertyName("quantity")]
         public int? QTY { get; set; }
+    }
+
+    public class CraftingMaterial
+    {
+        public string? Item { get; set; }  // Item being crafted (e.g., Steel)
+        public string? Material { get; set; }  // Required material (e.g., Iron Ore)
+        public int Quantity { get; set; }  // Amount needed (e.g., 3)
+        public int X { get; set; }  // Map X coordinate
+        public int Y { get; set; }  // Map Y coordinate
     }
     #endregion
 }
