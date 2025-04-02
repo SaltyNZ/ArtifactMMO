@@ -447,23 +447,9 @@ namespace ArtifactMMO
             -----------------------------------THE PLAN-----------------------------------
             Create a script that automatically levels up a player in mining skill.
             Use SQLite and other skills learnt to automate the process.
-
-            Rough outline:
-                - Set global variables
-                - Start While True loop
-                    - Get relevant infomation through the use of the SQLite database
-                        Resources required, The level cap, the item to craft ETC
-                    - Set the relevant variables that chagne per item.
-                        Like resources needed to craft ETC (Steel is Iron and Coal)
-                    - Empty inventory leaving the needed resources
-                    - Start Level Checking loop
-                        - Move to the resource and gather (Need checking to handle 2 item crafts)
-                        - Move to next resource if required.
-                        - Craft item
-                        - Deposit
-                        - Set level to check if it needs to move on.
-                        - Loop or Break
-                    -Loop
+            
+            NOTES:
+            //MANUAL ENTRY HERE - refers to data that will need to be changed to work with other skills and needs to be looked at if I want to create a 1 script fits all
             */
 
             //Call Character
@@ -475,16 +461,25 @@ namespace ArtifactMMO
             craftResponse? craftInfo = new craftResponse();
             if(charInfo != null)
             {
-                int? level = charInfo.MiningLevel, leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems, craftable = 0, gathereditemMax = 0, currentTotal = 0, gathereditems = 0, gatheredcraftable = 0;
+                int? level = charInfo.MiningLevel, //MANUAL ENTRY HERE
+                leveltarget = 999, currentBestLevel = 0, maxitems = charInfo.InventoryMaxItems, craftable = 0, gathereditemMax = 0, currentTotal = 0, gathereditems = 0, gatheredcraftable = 0, itemcraftqty = 0;
                 string? currentBestItem = "";
                 
 
-                // while(true)
-                // {
+                while(true)
+                {
+                    leveltarget = 999; 
+                    currentBestLevel = 0; 
+                    craftable = 0; 
+                    gathereditemMax = 0; 
+                    currentTotal = 0; 
+                    gathereditems = 0;
+                    gatheredcraftable = 0;
+                    itemcraftqty = 0;
                     //Relevant Infomation form SQLite
                     var resourceHDRData = await sql.RetrieveResourceHdrData();
                     var resourceLineData = await sql.RetrieveResourceLineData();
-                    var itemHDRData = await sql.RetrieveItemHdrData("mining", "resource", "'bar','alloy'");
+                    var itemHDRData = await sql.RetrieveItemHdrData("mining", "resource", "'bar','alloy'"); //MANUAL ENTRY HERE
                     
                     //Set up logic
 
@@ -492,7 +487,7 @@ namespace ArtifactMMO
                     foreach(var hdr in itemHDRData)
                     {
                         
-                        if(hdr.Level <= level && (hdr.Code != "obsidian" || hdr.Code != "strangold"))
+                        if(hdr.Level <= level && (hdr.Code != "obsidian" || hdr.Code != "strangold")) //MANUAL ENTRY HERE
                         {
                             currentBestLevel = hdr.Level;
                             currentBestItem = hdr.Code;
@@ -504,9 +499,9 @@ namespace ArtifactMMO
                         
                     }
                     
-                    Console.WriteLine($"The Character Mining Level is {level}");
+                    Console.WriteLine($"The Character Skill Level is {level}");
                     Console.WriteLine($"The Item to Craft is Level {currentBestLevel}. {currentBestItem}");
-                    Console.WriteLine($"The Next Mining Level is {leveltarget}");
+                    Console.WriteLine($"The Next Skill Level is {leveltarget}");
 
                     if(currentBestItem != "" && currentBestItem != null)
                     {
@@ -515,15 +510,18 @@ namespace ArtifactMMO
                         int i = 1;
                         foreach(var craftitem in carftingInfo)
                         {
+                            itemcraftqty += craftitem.Quantity;
+                        }
+
+                        foreach(var craftitem in carftingInfo)
+                        {
                             Console.WriteLine($"{i}. Need {craftitem.Quantity} of {craftitem.Material} to make {craftitem.Item} it is at X:{craftitem.X} Y:{craftitem.Y}");
-                            craftable = (int)(maxitems*(craftitem.Quantity / 10.0));
+                            craftable = (int)(maxitems*((double)craftitem.Quantity / itemcraftqty));
                             Console.WriteLine($"The total amount of items that can be gathered are {craftable}");
                             i++;
                         }
-
+                        
                         Console.WriteLine(carftingInfo.Count);
-                        //Reset Variables
-                    ///*
                         while(level < leveltarget)
                         {
 
@@ -549,7 +547,7 @@ namespace ArtifactMMO
                             foreach(var craftitem in carftingInfo)
                             {
                                 moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move",new {x=craftitem.X, y=craftitem.Y}, $"Moving to {craftitem.Material}");
-                                gathereditemMax = (int)(maxitems*(craftitem.Quantity / 10.0));
+                                gathereditemMax = (int)(maxitems*((double)craftitem.Quantity / itemcraftqty));
                                 Console.WriteLine($"Need to gather {gathereditemMax}");
                                 gathereditems = 0;
                                 gatheredcraftable = 0;
@@ -587,28 +585,29 @@ namespace ArtifactMMO
                                     //Got to here
                                 }
 
-                                if((int)gatheredcraftable/10 < craftable)
+                                if((double)gatheredcraftable/itemcraftqty < craftable)
                                 {
                                     Console.WriteLine($"Craftable was {craftable}");
-                                    craftable = (int)gatheredcraftable/craftitem.Quantity;
+                                    craftable = (int)(gatheredcraftable/(double)craftitem.Quantity);
                                     Console.WriteLine($"Craftable is now {craftable}");
                                 }
                                 
                             }
 
-                            moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new { x=1, y=5}, "Moving to crafting:");
+                            moveInfo = await api.PerformActionAsync<MoveResponse>(characterName, token, "move", new { x=1, y=5}, "Moving to crafting:"); //MANUAL ENTRY HERE
 
-                            craftInfo = await api.PerformActionAsync<craftResponse>(characterName, token, "crafting", new { code = currentBestItem, quantity = craftable}, $"Crafting {craftable} of {currentBestItem}");
+                            craftInfo = await api.PerformActionAsync<craftResponse>(characterName, token, "crafting", new { code = currentBestItem, quantity = craftable}, $"Crafting {craftable} of {currentBestItem}"); 
 
-                            level = craftInfo?.Character?.MiningLevel;
+                            level = craftInfo?.Character?.MiningLevel; //MANUAL ENTRY HERE
                             Console.WriteLine($"Current Level is {level} trying to reach {leveltarget}");
                         }
-                    //*/
+                        Console.WriteLine("Debug Break New Level hit");
+                        Console.ReadLine();
                     }
                     
 
                     
-                //}
+                }
             }
         }
     }
